@@ -13,6 +13,13 @@
       "runtimeArgs": ["--prefix", "landing", "run", "dev"],
       "port": 3000,
       "autoPort": true
+    },
+    {
+      "name": "pro-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "pro", "run", "dev", "--", "-p", "3001"],
+      "port": 3001,
+      "autoPort": true
     }
   ]
 }
