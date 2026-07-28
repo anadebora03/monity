@@ -182,25 +182,70 @@ identificador novo. Abas dentro do perfil do paciente usam querystring em vez de
 páginas independentes — menos estado de navegação pra sincronizar, back/forward do navegador
 continua funcionando de graça via querystring.
 
+### `/app` e `/pro` — dois ambientes, dois deploys (não dois paths do mesmo projeto)
+
+A Sprint 015 pede "duas rotas preparadas, `/app` e `/pro`, cada uma com layout, menu,
+autenticação e permissões próprias". Tecnicamente isso poderia significar duas coisas bem
+diferentes: (a) dois *paths* dentro do **mesmo** deploy/domínio, ou (b) dois *produtos*
+logicamente chamados "/app" e "/pro", cada um com seu próprio domínio/deploy. Escolhi **(b)**,
+mantendo a decisão já tomada e aprovada no blueprint original — e é importante registrar o
+porquê, porque a opção (a) parece mais simples à primeira vista e não é:
+
+- O Compasso Paciente **já está publicado e em uso** na raiz do próprio domínio (`/`), com PWA
+  instalado por usuários reais (ícone salvo na tela de início, service worker com escopo `/`,
+  URLs de redirecionamento de auth já configuradas no Supabase apontando pra essa raiz). Mover
+  fisicamente esses arquivos pra dentro de um path `/app/` no mesmo projeto quebraria exatamente
+  o que o critério de aceitação desta sprint exige não quebrar: o app instalado passaria a
+  apontar pra uma URL que não existe mais, o cache do Service Worker ficaria referenciando
+  caminhos antigos, e a sessão de quem já está logado seria invalidada pelo redirect mudar de
+  lugar. É uma mudança de infraestrutura de alto risco disfarçada de "só mover uma pasta".
+- Path-based routing (`/app` e `/pro` no mesmo projeto Vercel) só faria sentido se os dois
+  produtos fossem servidos pelo mesmo build/roteador — o que contradiz a decisão já tomada de o
+  Pro ser um projeto Next.js separado (ver "Decisões estruturais").
+
+**Decisão**: "/app" e "/pro" são dois **namespaces lógicos do produto Compasso**, não dois
+caminhos técnicos do mesmo servidor. Na prática:
+- **`/app`** = o Compasso Paciente, exatamente como já está publicado hoje (raiz do domínio
+  atual, zero mudança de URL, zero risco pro PWA instalado).
+- **`/pro`** = o Compasso Pro, um projeto/domínio Vercel próprio (ver seção "Domínio", já
+  decidido: começa em `*.vercel.app`, domínio próprio depois).
+
+Isso satisfaz o espírito do requisito (dois ambientes independentes, cada um com layout, menu,
+autenticação e permissões próprias — o que já é verdade automaticamente por serem dois projetos
+Next.js/estático distintos) sem o risco técnico real de migrar a raiz do app do paciente.
+
 ---
 
 ## 6. Estrutura do Banco
 
-Sem migração nesta sprint — só o desenho das entidades novas, para implementação na Sprint 015.
-**Nenhuma tabela existente é alterada de forma destrutiva** — a única mudança em tabelas
-existentes é *aditiva*: uma policy `RLS` de `select` a mais nas 8 tabelas do paciente, permitindo
-leitura por um profissional vinculado (além do próprio dono, que já pode ler).
+Implementado na Sprint 015 (`supabase/schema_pro.sql`). **Nenhuma tabela existente do paciente é
+alterada de forma destrutiva** — a única mudança nas 8 tabelas já existentes é *aditiva*: uma
+policy `RLS` de `select` a mais, permitindo leitura por um profissional vinculado (além do
+próprio dono, que já pode ler).
 
 | Entidade | Propósito | Campos principais | Relacionamentos |
 |---|---|---|---|
-| `professional_profiles` | 1:1 com `auth.users`, equivalente ao `profiles` do paciente, mas para profissionais | `id` (= `auth.users.id`), `nome`, `profissao`, `created_at`, `updated_at`, `deleted_at` | 1:1 `auth.users` |
-| `workspaces` | O "consultório" de um profissional — container pra pacientes e convites | `id`, `owner_id` (→ `professional_profiles.id`), `nome`, `plan`, `status`, `created_at`, `updated_at` | N:1 `professional_profiles` (dono) |
-| `workspace_invites` | Convite pendente/aceito/revogado/expirado | `id`, `workspace_id`, `code` (6 chars, único, é o "segredo" — nunca o `id`), `paciente_email` (opcional), `status` (`pending`\|`accepted`\|`revoked`\|`expired`), `created_at`, `expires_at`, `accepted_at`, `accepted_by` (→ `auth.users.id`, nulo até aceite) | N:1 `workspaces` |
-| `workspace_patients` | O vínculo **ativo** entre um paciente e um workspace — é o que dá permissão de leitura | `id`, `workspace_id`, `patient_id` (→ `auth.users.id`), `status` (`active`\|`inactive`), `linked_at`, `invite_id` (→ `workspace_invites.id`, rastreabilidade) | N:1 `workspaces`, N:1 `auth.users` (paciente) |
+| `professions` | Catálogo de referência — profissão nunca é string solta verificada no código | `id`, `slug` (`nutricionista`, `medico`, ...), `nome`, `active` | referenciada por `professional_profiles` |
+| `plans` | Catálogo de referência dos planos do Workspace | `id`, `slug`, `nome`, `patient_limit` (nulo = ilimitado), `price_cents`, `active` | referenciada por `workspaces` |
+| `professional_profiles` | 1:1 com `auth.users`, equivalente ao `profiles` do paciente, mas para profissionais | `id` (= `auth.users.id`), `nome`, `profession_id`, `created_at`, `updated_at`, `deleted_at` | 1:1 `auth.users`; N:1 `professions` |
+| `workspaces` | O "consultório" de um profissional — container pra pacientes e relacionamentos | `id`, `owner_id` (→ `auth.users.id`), `nome`, `plan_id`, `patient_limit` (override opcional do limite do plano), `status` | N:1 `auth.users` (dono); N:1 `plans` |
+| `patient_relationships` | **Entidade própria de relacionamento** (não um campo solto) — cobre desde o convite até o vínculo encerrado, nunca é apagada, só muda de `status` | `id`, `workspace_id`, `patient_id` (nulo até aceite), `invited_by`, `code`, `status` (`invite_sent`\|`pending_acceptance`\|`active`\|`ended`), `invited_at`, `accepted_at`, `ended_at`, `ended_reason`, `expires_at` | N:1 `workspaces`; N:1 `auth.users` (paciente) |
 
-Índice único relevante (mesma disciplina do schema atual — só o que uma consulta real precisa):
-`workspace_patients (patient_id) where status='active'` garante em nível de banco que um
-paciente só tem **um** vínculo ativo por vez (decisão da seção 3).
+Uma **view** calculada ao vivo, `workspace_patient_usage`, expõe `patient_limit`/`patients_used`/
+`patients_available` por workspace (nunca um contador armazenado que pode desalinhar do real —
+conta as linhas de `patient_relationships` com `status='active'` na hora da consulta).
+
+**Por que uma entidade só (`patient_relationships`), não convite + vínculo separados**: é
+literalmente o pedido da Sprint 015 ("não adicionar um campo `professional_id`, criar uma
+estrutura própria de relacionamento") — e resolve de graça três coisas que duas tabelas
+separadas exigiriam sincronizar manualmente: histórico (a linha nunca morre, só muda de
+`status`), auditoria (`invited_by`, timestamps de cada transição) e o caminho pra múltiplos
+profissionais/troca de profissional no futuro (mais linhas, mesmo modelo, zero refatoração).
+
+Índices únicos relevantes: `patient_relationships (code) where code is not null` (um código nunca
+é reaproveitado, mesmo depois de aceito ou expirado); `patient_relationships (patient_id) where
+status='active'` garante em nível de banco que um paciente só tem **um** vínculo ativo por vez
+(decisão da seção 3).
 
 ### RLS — a parte que precisa de mais cuidado
 
@@ -211,10 +256,10 @@ A policy de `select` das 8 tabelas do paciente (`weighings`, `applications`, `da
 using (
   auth.uid() = user_id
   or exists (
-    select 1 from workspace_patients wp
-    join workspaces w on w.id = wp.workspace_id
-    where wp.patient_id = <tabela>.user_id
-      and wp.status = 'active'
+    select 1 from patient_relationships pr
+    join workspaces w on w.id = pr.workspace_id
+    where pr.patient_id = <tabela>.user_id
+      and pr.status = 'active'
       and w.owner_id = auth.uid()
   )
 )
@@ -222,7 +267,24 @@ using (
 
 As policies de `insert`/`update` **não mudam** — continuam exigindo `auth.uid() = user_id`,
 garantindo em nível de banco (não só de UI) que um profissional nunca escreve dado de saúde do
-paciente, mesmo que tente direto pela API do Supabase.
+paciente, mesmo que tente direto pela API do Supabase. A transição de `patient_id` nulo para
+preenchido (aceite do convite) só acontece dentro de `redeem_workspace_invite()`, uma função
+`SECURITY DEFINER` — nenhuma policy de RLS permite ao paciente ou ao profissional gravar
+`patient_id` diretamente.
+
+### Camada centralizada de permissões
+
+A Sprint 015 pede "uma camada centralizada de autorização, evitando verificações espalhadas
+pelo código". Essa camada **é o RLS do Postgres**, não um módulo JavaScript novo — e essa é a
+resposta mais centralizada possível, não uma economia de esforço: RLS roda no banco, então
+qualquer jeito de acessar o dado (o app do paciente, o painel Pro quando existir, uma chamada
+direta à API do Supabase, uma função futura) passa pela **mesma** regra, automaticamente, sem
+precisar duplicar a checagem em cada frontend. Escrever uma camada de permissão em JavaScript
+agora seria (a) código morto — o painel Pro ainda não existe pra chamar essa camada — e (b) uma
+segunda fonte de verdade que poderia divergir da regra real do banco. Quando o Compasso Pro
+(Sprint 016+) precisar decidir o que mostrar na tela, ele consulta o Supabase normalmente; se o
+profissional não tem permissão, a consulta simplesmente não devolve a linha — não existe um
+"if" de permissão pra esquecer de escrever.
 
 ---
 
@@ -255,7 +317,7 @@ exatamente igual — o vínculo não muda uma vírgula da experiência de uso di
 
 | Sprint | Entrega | Depende de |
 |---|---|---|
-| **015** | Schema Supabase do Pro (`professional_profiles`, `workspaces`, `workspace_invites`, `workspace_patients`) + extensão de RLS nas 8 tabelas existentes | Este blueprint |
+| **015** ✅ | Fundação da plataforma: schema Supabase do Pro (`professions`, `plans`, `professional_profiles`, `workspaces`, `patient_relationships`) + extensão de RLS nas 8 tabelas existentes + decisão de rotas `/app`/`/pro` | Este blueprint |
 | **016** | App Compasso Pro — esqueleto: login/cadastro, onboarding (profissão/plano/workspace), Dashboard vazio | 015 |
 | **017** | Convites — gerar código, listar pendentes/aceitos/revogados, revogar | 015, 016 |
 | **018** | Compasso Paciente — pergunta de convite no onboarding + opção "Vincular profissional" em Configurações | 015, 017 |
