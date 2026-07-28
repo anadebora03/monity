@@ -77,10 +77,17 @@ const RULES = [
       if(Math.abs(delta)<0.3) return null;
       const semanas = Math.max(1, Math.round(dias/7));
       const perdeu = delta<0;
+      /* Sprint 014 (Marco Zero): quando o perfil já traz pesoInicial/pesoFimPeriod
+         válidos, abre a frase com a perda TOTAL desde o início do tratamento —
+         não confunde com o delta da janela recente (parágrafo separado). */
+      const totalPerdido = (ctx.profile.pesoInicial!=null && ctx.d.pesoFimPeriod!=null)
+        ? +(ctx.profile.pesoInicial-ctx.d.pesoFimPeriod).toFixed(1) : null;
+      const totalTxt = (totalPerdido!=null && totalPerdido>0.1)
+        ? `Você já eliminou <b>${nf(totalPerdido)} kg</b> desde o início do tratamento. ` : '';
       return {
         id:'peso_tendencia', categoria:'peso', tipo: perdeu?'informativo':'atencao', prioridade: perdeu?6:2,
         tone: perdeu?'':'amber', icon:'chart',
-        text:`Você ${perdeu?'perdeu':'ganhou'} <b>${nf(Math.abs(delta))} kg</b> nas últimas ${semanas} semana${semanas>1?'s':''}.`,
+        text:`${totalTxt}Você ${perdeu?'perdeu':'ganhou'} <b>${nf(Math.abs(delta))} kg</b> nas últimas ${semanas} semana${semanas>1?'s':''}.`,
         justificativa:`Baseado nas pesagens de ${fmtBRy(ini.date)} (${nf(ini.peso)} kg) e ${fmtBRy(fim.date)} (${nf(fim.peso)} kg).`,
         assinatura: delta,
       };

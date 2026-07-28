@@ -67,6 +67,11 @@ function sortedWeigh(){return[...S.weighings].sort((a,b)=>a.date<b.date?-1:1);}
 function currentWeight(){const w=sortedWeigh();return w.length?w[w.length-1].peso:S.profile.pesoInicial;}
 function lost(){return +(S.profile.pesoInicial-currentWeight()).toFixed(1);}
 function lostPct(){return S.profile.pesoInicial?(lost()/S.profile.pesoInicial*100):0;}
+/* Indicador 2 (Sprint 014) — evolução registrada NO COMPASSO: 1º peso
+   registrado no app → peso atual. Independente do Indicador 1 (lost(), que
+   usa o Marco Zero p.pesoInicial/p.dataInicio) — nunca misturar os dois. */
+function firstTrackedWeight(){const w=sortedWeigh();return w.length?w[0].peso:null;}
+function trackedLost(){const f=firstTrackedWeight();return f==null?null:+(f-currentWeight()).toFixed(1);}
 function imc(){const h=S.profile.altura/100;return h?currentWeight()/(h*h):0;}
 function imcClass(v){
   if(!v) return '';
@@ -138,8 +143,14 @@ function seedExample(){
   return {profile,weighings,applications,dailyLogs,exams,agenda,bio,
     pen:{capacidadeMg:60,doseMg:7.5,usadas:5},created:startISO};
 }
-function blankState(p){
-  return {profile:p,weighings:[{id:crypto.randomUUID(),date:p.dataInicio,peso:p.pesoInicial}],applications:[],dailyLogs:{},
+/* firstWeighing (opcional) — Sprint 014, Marco Zero: quando a pessoa já
+   iniciou o tratamento antes de conhecer o Compasso, o 1º registro real do
+   app é o peso ATUAL informado (hoje), não o peso do início do tratamento
+   (p.pesoInicial/p.dataInicio seguem só como referência histórica pros
+   indicadores — nunca viram um registro de pesagem). */
+function blankState(p,firstWeighing){
+  const w=firstWeighing||{date:p.dataInicio,peso:p.pesoInicial};
+  return {profile:p,weighings:[{id:crypto.randomUUID(),date:w.date,peso:w.peso}],applications:[],dailyLogs:{},
     exams:[],agenda:[],bio:[],pen:{capacidadeMg:0,doseMg:0,usadas:0},created:p.dataInicio};
 }
 
@@ -267,6 +278,15 @@ function inicioView(){
     ${lineChartPremium(sortedWeigh().map(w=>({x:w.date,y:w.peso})),S.profile.pesoMeta)}
   </div>
 
+  <div class="gcard tight" style="margin-top:14px;cursor:pointer" onclick="go('mais','jornada')">
+    <div class="between" style="margin-bottom:2px"><span class="eyebrow2" style="margin:0">Minha jornada</span><span style="color:var(--tx-3)">${icon('chevron')}</span></div>
+    <div class="row" style="margin-top:8px">
+      <div style="flex:1"><div style="font-size:11px;color:var(--tx-3)">Iniciado em</div><div style="font-size:14px;font-weight:700;color:var(--tx-1);margin-top:2px">${fmtBRy(S.profile.dataInicio)}</div></div>
+      <div style="flex:1"><div style="font-size:11px;color:var(--tx-3)">Perda total</div><div style="font-size:14px;font-weight:700;color:var(--tx-1);margin-top:2px">${l>=0?'−':'+'}${nf(Math.abs(l))} kg</div></div>
+      <div style="flex:1"><div style="font-size:11px;color:var(--tx-3)">Tratamento</div><div style="font-size:14px;font-weight:700;color:var(--tx-1);margin-top:2px">${daysTreat()} dias</div></div>
+    </div>
+  </div>
+
   ${topInsight()}
   `;
 }
@@ -384,14 +404,22 @@ function evEvolutionCard(){
   </div>`;
 }
 function evPesoTab(w){
-  const l=lost(), lp=lostPct();
+  const l=lost(), lp=lostPct(), tl=trackedLost();
   return `
-  <div class="gcard tight">${lineChartPremium(w.map(x=>({x:x.date,y:x.peso})),S.profile.pesoMeta)}</div>
-  <div class="grid3">
+  <div class="grid2">
+    <div class="stat-tile2"><div class="k">Peso inicial do tratamento</div><div class="v" style="font-size:20px">${nf(S.profile.pesoInicial)}<small> kg</small></div></div>
     <div class="stat-tile2"><div class="k">Peso atual</div><div class="v" style="font-size:20px">${nf(currentWeight())}<small> kg</small></div></div>
-    <div class="stat-tile2"><div class="k">Perda total</div><div class="v" style="font-size:20px">${l>=0?'−':'+'}${nf(Math.abs(l))}<small> kg</small></div></div>
-    <div class="stat-tile2"><div class="k">% Perda</div><div class="v" style="font-size:20px">${nf(Math.abs(lp))}<small>%</small></div></div>
   </div>
+  <div class="grid2">
+    <div class="stat-tile2"><div class="k">Perda total</div><div class="v" style="font-size:20px">${l>=0?'−':'+'}${nf(Math.abs(l))}<small> kg</small></div>
+      <span class="delta2 ${l>=0?'down':'up'}">${nf(Math.abs(lp))}% desde o início</span></div>
+    <div class="stat-tile2"><div class="k">Tempo de tratamento</div><div class="v" style="font-size:20px">${daysTreat()}<small> dias</small></div></div>
+  </div>
+  <div class="gcard tight">${lineChartPremium(w.map(x=>({x:x.date,y:x.peso})),S.profile.pesoMeta)}</div>
+  ${tl!=null&&w.length>=2?`<div class="gcard tight">
+    <div class="eyebrow2">Evolução registrada no Compasso</div>
+    <p style="font-size:13px;color:var(--tx-2);margin:6px 0 0;line-height:1.5">Do seu 1º registro no app (${nf(firstTrackedWeight())} kg, ${fmtBRy(w[0].date)}) até hoje: <b style="color:var(--tx-1)">${tl>=0?'−':'+'}${nf(Math.abs(tl))} kg</b></p>
+  </div>`:''}
   ${evEvolutionCard()}`;
 }
 function evImcTab(){
@@ -1034,10 +1062,11 @@ function cfgPerfilSecao(p,ic,meds,medIdx){
     <div class="glass-field"><label>Dia da aplicação</label>${comboField('pf-dia','cal',WD.map((d,i)=>({value:String(i),label:d})),p.diaAplicacao)}</div>
     <div class="glass-field-2">
       <div class="glass-field"><label>Início do tratamento</label>
-        <div class="field-wrap static">${ic('cal')}<span class="csel-value">${fmtBRy(p.dataInicio)}</span></div></div>
-      <div class="glass-field"><label>Peso inicial</label>
-        <div class="field-wrap static">${ic('scale')}<span class="csel-value">${nf(p.pesoInicial)} kg</span></div></div>
-    </div>`;
+        ${dateFieldCustom('pf-data','cal',p.dataInicio)}</div>
+      <div class="glass-field"><label for="pf-pini">Peso inicial (kg)</label>
+        <label class="field-wrap" for="pf-pini">${ic('scale')}<input id="pf-pini" inputmode="decimal" value="${p.pesoInicial}"></label></div>
+    </div>
+    <p class="muted" style="font-size:11.5px;margin-top:2px;line-height:1.4">Isso é o Marco Zero do seu tratamento — usado pra calcular sua perda total. Não é o mesmo que o seu 1º registro de peso no app.</p>`;
 }
 function cfgPreferenciasSecao(p,ic){
   return `<div class="glass-field-2">
@@ -1251,6 +1280,7 @@ function savePerfil(){
   p.diaAplicacao=parseInt(val('pf-dia')); p.altura=parseInt(val('pf-altura'))||p.altura;
   p.pesoMeta=numBR(val('pf-meta'))||p.pesoMeta; p.metaAgua=numBR(val('pf-agua'))||p.metaAgua;
   p.metaProteina=parseInt(val('pf-prot'))||p.metaProteina;
+  p.dataInicio=val('pf-data')||p.dataInicio; p.pesoInicial=numBR(val('pf-pini'))||p.pesoInicial;
   save();closeSheet();toast('Configurações salvas');render();
 }
 function resetAll(){
@@ -1359,10 +1389,27 @@ function dateFieldCustom(id,iconName,isoValue){
 
 function obView(){
   const ic=obIcon;
+  if(!OB_MARCO){
+    return `<div class="ob">
+    <div class="glow-wrap ob-icon">${logoHeroSVG(56)}</div>
+    <h1>Compasso</h1>
+    <p class="lead">Em que momento da sua jornada você está?<br>Queremos acompanhar sua evolução da forma mais precisa possível.</p>
+    <div class="gcard tight marco-card" onclick="obSetMarco('novo')">
+      <div class="marco-card-t">Estou começando meu tratamento agora</div>
+      <div class="marco-card-s">O primeiro peso que você registrar aqui será seu ponto de partida.</div>
+    </div>
+    <div class="gcard tight marco-card" onclick="obSetMarco('anterior')">
+      <div class="marco-card-t">Já iniciei meu tratamento e quero acompanhar minha evolução no Compasso</div>
+      <div class="marco-card-s">Você conta onde começou, a gente calcula sua jornada completa desde lá.</div>
+    </div>
+    <button class="btn-pill block ghost neutral" onclick="startExample()">Ver com dados de exemplo</button>
+  </div>`;
+  }
+  const anterior=OB_MARCO==='anterior';
   return `<div class="ob">
     <div class="glow-wrap ob-icon">${logoHeroSVG(56)}</div>
     <h1>Compasso</h1>
-    <p class="lead">Seu companheiro de tratamento com análogos de GLP-1. Aplicações, peso, medidas, sintomas e evolução — tudo em um diário inteligente que leva menos de um minuto por dia.</p>
+    <p class="lead">${anterior?'Conte um pouco sobre o início do seu tratamento — leva menos de um minuto.':'Seu companheiro de tratamento com análogos de GLP-1. Aplicações, peso, medidas, sintomas e evolução — tudo em um diário inteligente que leva menos de um minuto por dia.'}</p>
 
     <div class="glass-card">
       <div class="glass-field"><label for="o-nome">Como podemos te chamar?</label>
@@ -1376,22 +1423,24 @@ function obView(){
       <div class="glass-field"><label>Dia da aplicação</label>
         ${comboField('o-dia','cal',WD.map((d,i)=>({value:String(i),label:d})),5)}</div>
       <div class="glass-field-2">
-        <div class="glass-field"><label for="o-pini">Peso inicial (kg)</label>
+        <div class="glass-field"><label for="o-pini">${anterior?'Peso no início do tratamento (kg)':'Peso inicial (kg)'}</label>
           <label class="field-wrap" for="o-pini">${ic('scale')}<input id="o-pini" inputmode="decimal" placeholder="ex: 96"></label></div>
         <div class="glass-field"><label for="o-pmeta">Peso meta (kg)</label>
           <label class="field-wrap" for="o-pmeta">${ic('target')}<input id="o-pmeta" inputmode="decimal" placeholder="ex: 72"></label></div>
       </div>
+      ${anterior?`<div class="glass-field"><label for="o-atual">Peso atual (kg)</label>
+        <label class="field-wrap" for="o-atual">${ic('scale')}<input id="o-atual" inputmode="decimal" placeholder="ex: 89"></label></div>`:''}
       <div class="glass-field-2 asym">
         <div class="glass-field"><label for="o-alt">Altura (cm)</label>
           <label class="field-wrap" for="o-alt">${ic('ruler')}<input id="o-alt" inputmode="numeric" placeholder="ex: 165"></label></div>
-        <div class="glass-field"><label>Início do tratamento</label>
+        <div class="glass-field"><label>${anterior?'Início do tratamento':'Início do tratamento'}</label>
           ${dateFieldCustom('o-data','cal',todayISO())}</div>
       </div>
       <button class="btn-pill block" onclick="startNew()">Começar minha jornada
         ${AUTH_ARROW}
       </button>
     </div>
-    <button class="btn-pill block ghost neutral" onclick="startExample()">Ver com dados de exemplo</button>
+    <button class="btn-pill block ghost neutral" onclick="obSetMarco(null)">Voltar</button>
     <p class="ob-trust"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Seus dados estão seguros e protegidos</p>
     <p class="muted center" style="font-size:11.5px;margin-top:10px;line-height:1.5">O Compasso ajuda você a acompanhar seu tratamento, mas não substitui a orientação do seu médico ou nutricionista.</p>
   </div>`;
@@ -1484,12 +1533,15 @@ function pickDate(id,iso){
 }
 function startNew(){
   const nome=val('o-nome')||'Você';
+  const anterior=OB_MARCO==='anterior';
   const pini=numBR(val('o-pini')), pmeta=numBR(val('o-pmeta')), alt=parseInt(val('o-alt'));
+  const atual=anterior?numBR(val('o-atual')):null;
   if(!pini||!pmeta||!alt){toast('Preencha peso inicial, meta e altura');return;}
+  if(anterior&&!atual){toast('Preencha seu peso atual');return;}
   const p={nome,medicamento:val('o-med'),doseAtual:val('o-dose')||'—',unidade:'mg',
     diaAplicacao:parseInt(val('o-dia')),dataInicio:val('o-data')||todayISO(),
     pesoInicial:pini,pesoMeta:pmeta,altura:alt,metaAgua:3,metaProteina:100};
-  S=blankState(p);save();go('inicio');
+  S=blankState(p,anterior?{date:todayISO(),peso:atual}:null);save();go('inicio');
 }
 function startExample(){S=seedExample();save();toast('Dados de exemplo carregados');go('inicio');}
 
@@ -2436,8 +2488,10 @@ html,body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,s
   </div>
   ${d.w.length>=2?`<div class="card" style="padding:12px 12px 8px;margin-bottom:13px">${sparkSVG(d.w)}</div>`:''}
   <div class="kv">
+    <div class="kc"><div class="kl">Início do tratamento</div><div class="kv2">${fmtBRy(p.dataInicio)}</div></div>
     <div class="kc"><div class="kl">Peso inicial do tratamento</div><div class="kv2">${nf(p.pesoInicial)} kg</div></div>
     <div class="kc"><div class="kl">Peso atual</div><div class="kv2">${nf(d.pesoFimPeriod)} kg</div></div>
+    <div class="kc"><div class="kl">Tempo de tratamento</div><div class="kv2">${daysTreat()} dias</div></div>
     <div class="kc"><div class="kl">Peso meta</div><div class="kv2">${nf(p.pesoMeta)} kg</div></div>
     <div class="kc"><div class="kl">Falta para a meta</div><div class="kv2">${falta>0?nf(falta)+' kg':'✓ Meta atingida'}</div></div>
   </div>
@@ -2588,8 +2642,6 @@ function waveSVG(){
    ============================================================ */
 function welcomeView(){
   return `<div class="welcome">
-    <div class="welcome-glow welcome-glow-a"></div>
-    <div class="welcome-glow welcome-glow-b"></div>
     ${waveSVG()}
     <div class="welcome-content">
       <div class="welcome-top">
@@ -2618,6 +2670,8 @@ function welcomeView(){
    ============================================================ */
 let AUTH_SCREEN='welcome'; // 'welcome' | 'login' | 'cadastro' | 'recuperar' | 'nova-senha'
 let AUTH_MSG=null; // mensagem de sucesso exibida no lugar do formulário (ex.: "confira seu e-mail")
+let OB_MARCO=null; // null (ainda não respondeu) | 'novo' | 'anterior' — Sprint 014, Marco Zero
+function obSetMarco(v){OB_MARCO=v;render();}
 
 function emailValido(e){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
 function goAuth(screen){ AUTH_MSG=null; AUTH_SCREEN=screen; renderWelcome(); }
