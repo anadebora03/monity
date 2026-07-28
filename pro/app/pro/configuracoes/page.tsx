@@ -35,7 +35,7 @@ export default async function ConfiguracoesPage() {
         <dl className="mt-3 space-y-2 text-sm">
           <div className="flex justify-between">
             <dt className="text-ink-soft">Nome</dt>
-            <dd className="font-medium text-ink">{profile?.nome ?? user?.email}</dd>
+            <dd className="font-medium text-ink">{profile?.nome || user?.email}</dd>
           </div>
           <div className="flex justify-between">
             <dt className="text-ink-soft">E-mail</dt>

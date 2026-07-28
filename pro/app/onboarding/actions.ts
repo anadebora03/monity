@@ -17,9 +17,16 @@ export async function completeOnboarding(professionId: string, nome: string) {
   } = await supabase.auth.getUser();
   if (!user) return { ok: false as const, error: 'Não autenticado.' };
 
+  // nome vem do cadastro (user_metadata) normalmente, mas uma conta que
+  // já existia antes de passar pelo cadastro do Pro (ex.: já era
+  // paciente com o mesmo e-mail) pode chegar aqui sem isso — nunca
+  // grava nome vazio, cai pro início do e-mail em vez de deixar o
+  // Workspace com "Consultório de" sem nada depois.
+  const nomeSeguro = nome.trim() || user.email?.split('@')[0] || 'Profissional';
+
   const { error: profileError } = await supabase
     .from('professional_profiles')
-    .upsert({ id: user.id, nome, profession_id: professionId });
+    .upsert({ id: user.id, nome: nomeSeguro, profession_id: professionId });
   if (profileError) return { ok: false as const, error: 'Não foi possível salvar seu perfil. Tente novamente.' };
 
   const { data: existing } = await supabase
@@ -33,7 +40,7 @@ export async function completeOnboarding(professionId: string, nome: string) {
 
     const { error: workspaceError } = await supabase.from('workspaces').insert({
       owner_id: user.id,
-      nome: `Consultório de ${nome}`,
+      nome: `Consultório de ${nomeSeguro}`,
       plan_id: startPlan?.id ?? null,
       status: 'active',
     });

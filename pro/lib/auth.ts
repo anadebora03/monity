@@ -39,7 +39,17 @@ export async function signUp(email: string, password: string, metadata?: Record<
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: metadata ? { data: metadata } : undefined,
+      options: {
+        data: metadata,
+        // sem isso, o link de confirmação usa a "Site URL" padrão do
+        // projeto Supabase (hoje configurada pro app do paciente) e
+        // manda o profissional de volta pro lugar errado. Isso exige
+        // que essa origem também esteja na allowlist de "Redirect
+        // URLs" do painel do Supabase (Authentication -> URL
+        // Configuration) — sem isso, o Supabase ignora esse valor e
+        // volta a usar a Site URL padrão silenciosamente.
+        emailRedirectTo: typeof window !== 'undefined' ? `${window.location.origin}/login` : undefined,
+      },
     });
     if (error) return { ok: false as const, error: traduzErro(error) };
     return { ok: true as const, precisaConfirmarEmail: !data.session };
