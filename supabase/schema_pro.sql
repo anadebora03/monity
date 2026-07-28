@@ -96,10 +96,20 @@ create index if not exists idx_workspace_invites_workspace on workspace_invites 
 create index if not exists idx_workspaces_owner on workspaces (owner_id);
 
 -- ============================================================
--- Trigger de updated_at — reaproveita a função já criada por
--- schema.sql, mesmo mecanismo, mesma justificativa (timestamp
--- sempre definido pelo servidor, nunca pelo relógio do cliente).
+-- Trigger de updated_at — mesma função/mecanismo de schema.sql
+-- (timestamp sempre definido pelo servidor, nunca pelo relógio do
+-- cliente). Redefinida aqui com "create or replace" pra este arquivo
+-- não depender de schema.sql ter rodado antes neste projeto — se a
+-- função já existir com essa definição, isso é um no-op seguro.
 -- ============================================================
+create or replace function set_updated_at()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
 drop trigger if exists trg_updated_at on professional_profiles;
 create trigger trg_updated_at before update on professional_profiles for each row execute function set_updated_at();
 drop trigger if exists trg_updated_at on workspaces;
