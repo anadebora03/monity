@@ -20,9 +20,15 @@ export default async function ProLayout({ children }: { children: React.ReactNod
     .eq('owner_id', user.id)
     .maybeSingle();
 
+  const { data: profile } = await supabase
+    .from('professional_profiles')
+    .select('nome')
+    .eq('id', user.id)
+    .maybeSingle();
+
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      <Sidebar workspaceName={workspace?.nome ?? 'Seu consultório'} />
+    <div className="flex min-h-screen bg-white">
+      <Sidebar nome={profile?.nome || user.email || 'Profissional'} workspaceName={workspace?.nome ?? 'Seu consultório'} />
       <div className="flex-1 overflow-y-auto">{children}</div>
     </div>
   );

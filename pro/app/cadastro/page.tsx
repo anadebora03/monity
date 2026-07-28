@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { AuthShell, FormField, SubmitButton, ErrorText } from '@/components/AuthShell';
+import { AuthShell, ErrorText } from '@/components/AuthShell';
+import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
 import { signUp } from '@/lib/auth';
 
 export default function CadastroPage() {
@@ -73,8 +75,8 @@ export default function CadastroPage() {
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <ErrorText>{error}</ErrorText>
-        <FormField label="Nome completo" required value={nome} onChange={(e) => setNome(e.target.value)} />
-        <FormField
+        <Input label="Nome completo" required value={nome} onChange={(e) => setNome(e.target.value)} />
+        <Input
           label="E-mail"
           type="email"
           autoComplete="email"
@@ -82,7 +84,7 @@ export default function CadastroPage() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        <FormField
+        <Input
           label="Senha"
           type="password"
           autoComplete="new-password"
@@ -90,7 +92,7 @@ export default function CadastroPage() {
           value={senha}
           onChange={(e) => setSenha(e.target.value)}
         />
-        <FormField
+        <Input
           label="Confirmação da senha"
           type="password"
           autoComplete="new-password"
@@ -98,7 +100,9 @@ export default function CadastroPage() {
           value={confirmacao}
           onChange={(e) => setConfirmacao(e.target.value)}
         />
-        <SubmitButton loading={loading}>Criar conta</SubmitButton>
+        <Button type="submit" disabled={loading} className="w-full">
+          {loading ? 'Aguarde…' : 'Criar conta'}
+        </Button>
       </form>
     </AuthShell>
   );

@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { AuthShell, FormField, SubmitButton, ErrorText } from '@/components/AuthShell';
+import { AuthShell, ErrorText } from '@/components/AuthShell';
+import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
 import { resetPasswordForEmail } from '@/lib/auth';
 
 export default function RecuperarSenhaPage() {
@@ -50,7 +52,7 @@ export default function RecuperarSenhaPage() {
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <ErrorText>{error}</ErrorText>
-        <FormField
+        <Input
           label="E-mail"
           type="email"
           autoComplete="email"
@@ -58,7 +60,9 @@ export default function RecuperarSenhaPage() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        <SubmitButton loading={loading}>Enviar link</SubmitButton>
+        <Button type="submit" disabled={loading} className="w-full">
+          {loading ? 'Aguarde…' : 'Enviar link'}
+        </Button>
       </form>
     </AuthShell>
   );

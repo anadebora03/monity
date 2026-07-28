@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { AuthShell, FormField, SubmitButton, ErrorText } from '@/components/AuthShell';
+import { AuthShell, ErrorText } from '@/components/AuthShell';
+import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
 import { signIn } from '@/lib/auth';
 
 export default function LoginPage() {
@@ -42,7 +44,7 @@ export default function LoginPage() {
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <ErrorText>{error}</ErrorText>
-        <FormField
+        <Input
           label="E-mail"
           type="email"
           autoComplete="email"
@@ -50,7 +52,7 @@ export default function LoginPage() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        <FormField
+        <Input
           label="Senha"
           type="password"
           autoComplete="current-password"
@@ -59,11 +61,13 @@ export default function LoginPage() {
           onChange={(e) => setPassword(e.target.value)}
         />
         <div className="text-right">
-          <Link href="/recuperar-senha" className="text-sm text-accent">
+          <Link href="/recuperar-senha" className="text-sm font-medium text-accent">
             Esqueci minha senha
           </Link>
         </div>
-        <SubmitButton loading={loading}>Entrar</SubmitButton>
+        <Button type="submit" disabled={loading} className="w-full">
+          {loading ? 'Aguarde…' : 'Entrar'}
+        </Button>
       </form>
     </AuthShell>
   );

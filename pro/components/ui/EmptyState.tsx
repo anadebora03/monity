@@ -13,10 +13,10 @@ export function EmptyState({
 }) {
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center px-6 text-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/10 text-accent">
-        <Icon size={26} strokeWidth={2} />
+      <div className="flex h-14 w-14 items-center justify-center rounded-md bg-accent-gradient-soft text-accent">
+        <Icon size={24} strokeWidth={2} />
       </div>
-      <h1 className="mt-6 text-xl font-bold text-ink">{title}</h1>
+      <h1 className="mt-6 text-xl font-bold tracking-[-0.01em] text-ink">{title}</h1>
       <p className="mt-2 max-w-sm text-sm text-ink-soft">{description}</p>
       {action && <div className="mt-6">{action}</div>}
     </div>

@@ -1,5 +1,5 @@
 import { Users } from 'lucide-react';
-import { EmptyState } from '@/components/EmptyState';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 export default function PacientesPage() {
   return (

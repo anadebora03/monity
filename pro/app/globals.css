@@ -8,5 +8,17 @@ body {
 }
 
 body {
-  @apply bg-slate-50 text-ink antialiased;
+  @apply bg-white text-ink antialiased;
+}
+
+/* Blob de luz suave — mesma ideia de .welcome-glow-a do app do
+   paciente (Sprint 014: radial-gradient + blur, nunca um degradê
+   comum), só recalibrado pra fundo branco em vez de navy. Usado
+   atrás do HeroCard do dashboard, nunca como elemento isolado. */
+.glow-blob {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(60px);
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(79, 160, 250, 0.18) 0%, rgba(79, 160, 250, 0) 70%);
 }
