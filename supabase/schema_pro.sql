@@ -8,21 +8,26 @@
 --
 -- Ver COMPASSO_PRO_BLUEPRINT.md pra arquitetura completa.
 --
--- >>> Esta versão SUBSTITUI a rodada anteriormente neste projeto <<<
--- A primeira versão desta sprint (rodada há pouco) criou
--- workspace_invites + workspace_patients como duas tabelas
--- separadas. Esta versão consolida as duas num único
--- patient_relationships — uma entidade de relacionamento própria,
--- com histórico e 4 estados, em vez de "convite" e "vínculo" como
--- dois objetos que precisam ser mantidos em sincronia. Como essas
--- duas tabelas foram criadas há minutos e ainda não têm nenhuma
--- linha real (nenhum app usa elas ainda), este arquivo pode
--- simplesmente derrubá-las e recriar do zero — não há dado de
--- paciente ou profissional em risco aqui. As 8 tabelas do PACIENTE
--- (profiles, weighings, etc.) nunca são tocadas por este DROP.
+-- >>> Esta versão SUBSTITUI qualquer rodada anterior neste projeto <<<
+-- Duas rodadas anteriores já aconteceram neste projeto: a primeira
+-- criou workspace_invites + workspace_patients como tabelas
+-- separadas; esta consolida as duas num único patient_relationships
+-- (uma entidade de relacionamento própria, com histórico e 4
+-- estados). Como "create table if not exists" não altera uma tabela
+-- que já existe, workspaces/professional_profiles também precisam
+-- ser derrubadas e recriadas aqui pra pegar as colunas novas
+-- (plan_id/profession_id) — nenhuma delas tem linha real ainda
+-- (nenhum app usa elas ainda). As 8 tabelas do PACIENTE (profiles,
+-- weighings, etc.) nunca são tocadas por nenhum DROP deste arquivo.
 -- ============================================================
 
 -- ---------- limpeza da versão anterior desta sprint (tabelas vazias, seguro) ----------
+-- "create table if not exists" NÃO altera uma tabela que já existe —
+-- se workspaces/professional_profiles já foram criadas numa tentativa
+-- anterior (com plan/profissao em vez de plan_id/profession_id), elas
+-- ficam com a estrutura VELHA silenciosamente. Por isso este bloco
+-- derruba tudo que pertence só a esta sprint (nenhuma tabela do
+-- paciente) antes de recriar — nenhuma delas tem dado real ainda.
 drop policy if exists "select_pro" on profiles;
 drop policy if exists "select_pro" on weighings;
 drop policy if exists "select_pro" on applications;
@@ -33,8 +38,12 @@ drop policy if exists "select_pro" on agenda;
 drop policy if exists "select_pro" on pens;
 
 drop function if exists redeem_workspace_invite(text);
+drop view if exists workspace_patient_usage;
+drop table if exists patient_relationships cascade;
 drop table if exists workspace_patients cascade;
 drop table if exists workspace_invites cascade;
+drop table if exists workspaces cascade;
+drop table if exists professional_profiles cascade;
 
 -- ---------- professions (tabela de referência — nunca string solta no código) ----------
 -- Adicionar uma profissão nova no futuro (ex.: Educador Físico) é uma
