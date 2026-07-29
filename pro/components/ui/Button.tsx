@@ -9,9 +9,9 @@ const VARIANT_CLASS: Record<Variant, string> = {
   // claro -> escuro + sombra colorida com "glow").
   primary: 'bg-accent-gradient text-white shadow-btn hover:brightness-[1.03] active:brightness-[0.98]',
   secondary:
-    'bg-white text-accent border border-accent/25 hover:bg-accent/5 hover:border-accent/40',
-  ghost: 'bg-transparent text-ink-soft hover:bg-slate-50 hover:text-ink',
-  danger: 'bg-white text-danger border border-danger/25 hover:bg-danger/5',
+    'bg-white text-accent border border-accent/25 hover:bg-accent/5 hover:border-accent/40 dark:bg-transparent dark:text-accent-light dark:border-accent-light/25 dark:hover:bg-accent-light/10',
+  ghost: 'bg-transparent text-ink-soft hover:bg-slate-50 hover:text-ink dark:text-white/60 dark:hover:bg-white/5 dark:hover:text-white',
+  danger: 'bg-white text-danger border border-danger/25 hover:bg-danger/5 dark:bg-transparent',
 };
 
 const SIZE_CLASS: Record<Size, string> = {

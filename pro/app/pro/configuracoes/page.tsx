@@ -28,46 +28,46 @@ export default async function ConfiguracoesPage() {
 
   return (
     <div className="mx-auto max-w-xl px-8 py-10">
-      <h1 className="text-xl font-bold tracking-[-0.01em] text-ink">Configurações</h1>
-      <p className="mt-1 text-sm text-ink-soft">Dados do seu perfil e do seu Workspace.</p>
+      <h1 className="text-xl font-bold tracking-[-0.01em] text-ink dark:text-white">Configurações</h1>
+      <p className="mt-1 text-sm text-ink-soft dark:text-white/60">Dados do seu perfil e do seu Workspace.</p>
 
       <Card className="mt-8">
-        <p className="text-xs font-semibold uppercase tracking-[.09em] text-ink-faint">Profissional</p>
+        <p className="text-xs font-semibold uppercase tracking-[.09em] text-ink-faint dark:text-white/40">Profissional</p>
         <dl className="mt-3 space-y-2 text-sm">
           <div className="flex justify-between">
-            <dt className="text-ink-soft">Nome</dt>
-            <dd className="font-medium text-ink">{profile?.nome || user?.email}</dd>
+            <dt className="text-ink-soft dark:text-white/60">Nome</dt>
+            <dd className="font-medium text-ink dark:text-white">{profile?.nome || user?.email}</dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-ink-soft">E-mail</dt>
-            <dd className="font-medium text-ink">{user?.email}</dd>
+            <dt className="text-ink-soft dark:text-white/60">E-mail</dt>
+            <dd className="font-medium text-ink dark:text-white">{user?.email}</dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-ink-soft">Profissão</dt>
-            <dd className="font-medium text-ink">{professionName ?? '—'}</dd>
+            <dt className="text-ink-soft dark:text-white/60">Profissão</dt>
+            <dd className="font-medium text-ink dark:text-white">{professionName ?? '—'}</dd>
           </div>
         </dl>
       </Card>
 
       <Card className="mt-4">
-        <p className="text-xs font-semibold uppercase tracking-[.09em] text-ink-faint">Workspace</p>
+        <p className="text-xs font-semibold uppercase tracking-[.09em] text-ink-faint dark:text-white/40">Workspace</p>
         <dl className="mt-3 space-y-2 text-sm">
           <div className="flex justify-between">
-            <dt className="text-ink-soft">Nome</dt>
-            <dd className="font-medium text-ink">{workspace?.nome ?? '—'}</dd>
+            <dt className="text-ink-soft dark:text-white/60">Nome</dt>
+            <dd className="font-medium text-ink dark:text-white">{workspace?.nome ?? '—'}</dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-ink-soft">Plano</dt>
-            <dd className="font-medium text-ink">{planName ?? '—'}</dd>
+            <dt className="text-ink-soft dark:text-white/60">Plano</dt>
+            <dd className="font-medium text-ink dark:text-white">{planName ?? '—'}</dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-ink-soft">Status</dt>
-            <dd className="font-medium capitalize text-ink">{workspace?.status ?? '—'}</dd>
+            <dt className="text-ink-soft dark:text-white/60">Status</dt>
+            <dd className="font-medium capitalize text-ink dark:text-white">{workspace?.status ?? '—'}</dd>
           </div>
         </dl>
       </Card>
 
-      <p className="mt-6 text-xs text-ink-faint">Edição de perfil e assinatura chegam em sprints futuras.</p>
+      <p className="mt-6 text-xs text-ink-faint dark:text-white/40">Edição de perfil e assinatura chegam em sprints futuras.</p>
     </div>
   );
 }

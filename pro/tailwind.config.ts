@@ -6,6 +6,7 @@ import type { Config } from 'tailwindcss';
    valores porque "fundo totalmente branco" é literalmente a
    descrição do tema claro que já existe e já foi aprovado. */
 const config: Config = {
+  darkMode: 'class',
   content: ['./app/**/*.{ts,tsx}', './components/**/*.{ts,tsx}'],
   theme: {
     extend: {
@@ -23,6 +24,18 @@ const config: Config = {
         good: '#1F9D6B',
         warn: '#C97F1E', // --warn2 (tema claro)
         danger: '#C24A3A', // --danger2 (tema claro)
+        // ---- tema escuro: mesmos tokens de style.css, :root (sem
+        // [data-theme="light"]) — é o tema ESCURO/padrão do app do
+        // paciente, não uma paleta inventada pro Pro. ----
+        navy: {
+          DEFAULT: '#0B1526', // --nv-bg
+          soft: '#0F1D35', // --nv-bg-2
+          card: '#182A4A', // --nv-elevated
+        },
+        border: {
+          dark: 'rgba(140,180,255,.16)', // --nv-border
+          'dark-strong': 'rgba(140,180,255,.3)', // --nv-border-strong
+        },
       },
       backgroundImage: {
         // mesmo gradiente do botão primário do app (.btn-pill), só
@@ -31,6 +44,7 @@ const config: Config = {
         'accent-gradient': 'linear-gradient(135deg, #4FA0FA 0%, #2E6FC9 100%)',
         'accent-gradient-soft': 'linear-gradient(135deg, rgba(79,160,250,.12) 0%, rgba(46,111,201,.05) 100%)',
         'hero-gradient': 'linear-gradient(160deg, #F4F9FF 0%, #FFFFFF 55%, #F7FAFF 100%)',
+        'hero-gradient-dark': 'linear-gradient(160deg, #0F1D35 0%, #0B1526 55%, #0F1D35 100%)',
       },
       boxShadow: {
         // --sh-glow-sm / --sh-glow-lg / --sh-btn2 (tema claro)
@@ -41,6 +55,7 @@ const config: Config = {
         // de --sh-card2 do tema claro, só bem mais suave (opacidade
         // menor) porque aqui o fundo é branco puro, não um degradê navy.
         card: '0 1px 2px rgba(15,29,53,.04), 0 12px 32px rgba(15,29,53,.06)',
+        'card-dark': '0 1px 2px rgba(0,0,0,.2), 0 12px 32px rgba(0,0,0,.28)',
       },
       borderRadius: {
         sm: '14px', // --rd-sm
@@ -52,6 +67,12 @@ const config: Config = {
       },
       transitionTimingFunction: {
         out: 'cubic-bezier(.2,.8,.2,1)', // --ease-out
+      },
+      keyframes: {
+        fadeIn: { from: { opacity: '0', transform: 'translateY(4px)' }, to: { opacity: '1', transform: 'translateY(0)' } },
+      },
+      animation: {
+        'fade-in': 'fadeIn .35s cubic-bezier(.2,.8,.2,1) both',
       },
     },
   },

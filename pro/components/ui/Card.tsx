@@ -4,7 +4,7 @@ export function Card({ className = '', ...props }: HTMLAttributes<HTMLDivElement
   return (
     <div
       {...props}
-      className={`rounded-lg border border-slate-100 bg-white p-6 shadow-card ${className}`}
+      className={`rounded-lg border border-slate-100 bg-white p-6 shadow-card transition-shadow duration-200 ease-out dark:border-white/5 dark:bg-navy-soft dark:shadow-card-dark ${className}`}
     />
   );
 }
@@ -16,7 +16,7 @@ export function HeroCard({ className = '', children, ...props }: HTMLAttributes<
   return (
     <div
       {...props}
-      className={`relative overflow-hidden rounded-lg border border-slate-100 bg-hero-gradient p-8 shadow-card ${className}`}
+      className={`relative overflow-hidden rounded-lg border border-slate-100 bg-hero-gradient p-8 shadow-card dark:border-white/5 dark:bg-hero-gradient-dark dark:shadow-card-dark ${className}`}
     >
       <div className="glow-blob -right-16 -top-24 h-64 w-64" />
       <div className="glow-blob -bottom-20 -left-10 h-56 w-56" />

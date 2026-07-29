@@ -8,7 +8,7 @@ body {
 }
 
 body {
-  @apply bg-white text-ink antialiased;
+  @apply text-ink antialiased dark:text-white;
 }
 
 /* Blob de luz suave — mesma ideia de .welcome-glow-a do app do
@@ -21,4 +21,7 @@ body {
   filter: blur(60px);
   pointer-events: none;
   background: radial-gradient(circle, rgba(79, 160, 250, 0.18) 0%, rgba(79, 160, 250, 0) 70%);
+}
+.dark .glow-blob {
+  background: radial-gradient(circle, rgba(79, 160, 250, 0.22) 0%, rgba(79, 160, 250, 0) 70%);
 }

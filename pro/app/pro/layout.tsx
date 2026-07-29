@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { Sidebar } from '@/components/Sidebar';
+import { ProShell } from '@/components/ProShell';
 
 /* Shell protegido de /pro/* — o middleware já bloqueia quem não tem
    professional_profiles (ver lib/supabase/middleware.ts), então
@@ -27,9 +27,8 @@ export default async function ProLayout({ children }: { children: React.ReactNod
     .maybeSingle();
 
   return (
-    <div className="flex min-h-screen bg-white">
-      <Sidebar nome={profile?.nome || user.email || 'Profissional'} workspaceName={workspace?.nome ?? 'Seu consultório'} />
-      <div className="flex-1 overflow-y-auto">{children}</div>
-    </div>
+    <ProShell nome={profile?.nome || user.email || 'Profissional'} workspaceName={workspace?.nome ?? 'Seu consultório'}>
+      {children}
+    </ProShell>
   );
 }

@@ -13,16 +13,16 @@ export function AuthShell({
   footer?: React.ReactNode;
 }) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-white px-6 py-12">
+    <main className="flex min-h-screen items-center justify-center bg-white px-6 py-12 dark:bg-navy">
       <div className="w-full max-w-sm">
         <Link href="/" className="mb-8 flex items-center gap-2.5">
           <Logo size={32} />
-          <span className="text-sm font-semibold tracking-[-0.005em] text-ink">Compasso Pro</span>
+          <span className="text-sm font-semibold tracking-[-0.005em] text-ink dark:text-white">Compasso Pro</span>
         </Link>
-        <h1 className="text-2xl font-bold tracking-[-0.02em] text-ink">{title}</h1>
-        <p className="mt-1.5 text-sm text-ink-soft">{subtitle}</p>
+        <h1 className="text-2xl font-bold tracking-[-0.02em] text-ink dark:text-white">{title}</h1>
+        <p className="mt-1.5 text-sm text-ink-soft dark:text-white/60">{subtitle}</p>
         <div className="mt-8">{children}</div>
-        {footer && <div className="mt-6 text-center text-sm text-ink-soft">{footer}</div>}
+        {footer && <div className="mt-6 text-center text-sm text-ink-soft dark:text-white/60">{footer}</div>}
       </div>
     </main>
   );
