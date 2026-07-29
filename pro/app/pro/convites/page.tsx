@@ -1,12 +1,7 @@
-import { Mail } from 'lucide-react';
-import { EmptyState } from '@/components/ui/EmptyState';
+import { listarConvites } from '@/lib/invites';
+import { ConvitesView } from '@/components/ConvitesView';
 
-export default function ConvitesPage() {
-  return (
-    <EmptyState
-      icon={Mail}
-      title="Nenhum convite enviado"
-      description="Gerar e enviar convites chega na próxima etapa do Compasso Pro."
-    />
-  );
+export default async function ConvitesPage() {
+  const convites = await listarConvites();
+  return <ConvitesView convites={convites} />;
 }

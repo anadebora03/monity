@@ -1,12 +1,9 @@
-import { Users } from 'lucide-react';
-import { EmptyState } from '@/components/ui/EmptyState';
+import { createClient } from '@/lib/supabase/server';
+import { listarPacientes } from '@/lib/patients';
+import { PacientesView } from '@/components/PacientesView';
 
-export default function PacientesPage() {
-  return (
-    <EmptyState
-      icon={Users}
-      title="Nenhum paciente vinculado ainda"
-      description="Quando você convidar e um paciente aceitar, ele aparece aqui."
-    />
-  );
+export default async function PacientesPage() {
+  const supabase = await createClient();
+  const pacientes = await listarPacientes(supabase);
+  return <PacientesView pacientes={pacientes} />;
 }

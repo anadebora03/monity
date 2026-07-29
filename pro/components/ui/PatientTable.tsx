@@ -45,7 +45,9 @@ export function PatientTable({ pacientes }: { pacientes: PacienteDashboard[] }) 
                     <span className="font-medium text-ink dark:text-white">{p.nome}</span>
                   </div>
                 </td>
-                <td className="py-3 pr-4 text-ink-soft dark:text-white/60">{formatDate(p.ultimoRegistro)}</td>
+                <td className="py-3 pr-4 text-ink-soft dark:text-white/60">
+                  {p.status === 'sem_dado' ? '—' : formatDate(p.ultimoRegistro)}
+                </td>
                 <td className="py-3 pr-4 text-ink dark:text-white">{p.pesoAtual != null ? `${p.pesoAtual} kg` : '—'}</td>
                 <td className="py-3 pr-4">
                   {p.evolucaoDesdeInicio != null ? (

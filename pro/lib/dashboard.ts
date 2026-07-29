@@ -26,6 +26,7 @@ type PatientSummaryRow = {
   peso_30d_atras: number | null;
   ultima_aplicacao_data: string | null;
   ultimo_registro: string;
+  perfil_completo: boolean;
 };
 
 type AgendaRow = { user_id: string; date: string; tipo: string | null; obs: string | null };
@@ -116,8 +117,12 @@ export async function getDashboardData(supabase: SupabaseClient, ownerId: string
 
   const pacientes: PacienteDashboard[] = summary.map((r) => {
     const motivos: string[] = [];
-    const diasSemRegistro = diasEntre(r.ultimo_registro.slice(0, 10), hoje);
-    if (diasSemRegistro > 10) motivos.push(`Sem registrar há ${diasSemRegistro} dias`);
+    // ultimo_registro cai num sentinela (epoch) quando o paciente ainda
+    // não tem nenhum dado real (perfil_completo=false — aceitou o
+    // convite mas não abriu o app pra fazer o próprio cadastro ainda);
+    // sem essa guarda, "dias sem registro" vira um número absurdo.
+    const diasSemRegistro = r.perfil_completo ? diasEntre(r.ultimo_registro.slice(0, 10), hoje) : null;
+    if (diasSemRegistro != null && diasSemRegistro > 10) motivos.push(`Sem registrar há ${diasSemRegistro} dias`);
     if (r.peso_atual != null && r.peso_30d_atras != null && r.peso_atual > r.peso_30d_atras) {
       motivos.push('Ganho de peso no período');
     }
@@ -178,7 +183,7 @@ export async function getDashboardData(supabase: SupabaseClient, ownerId: string
       tom: 'good',
     });
   }
-  const semAtualizar7d = summary.filter((r) => diasEntre(r.ultimo_registro.slice(0, 10), hoje) > 7);
+  const semAtualizar7d = summary.filter((r) => r.perfil_completo && diasEntre(r.ultimo_registro.slice(0, 10), hoje) > 7);
   if (semAtualizar7d.length > 0) {
     insights.push({
       titulo: 'Atenção',
