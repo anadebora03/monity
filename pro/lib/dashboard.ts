@@ -56,18 +56,19 @@ export type DashboardData = {
   agendaHoje: { pacienteNome: string; tipo: string; obs: string | null }[];
 };
 
-function todayISO(d = new Date()): string {
+export function todayISO(d = new Date()): string {
   return d.toISOString().slice(0, 10);
 }
-function diasEntre(a: string, b: string): number {
+export function diasEntre(a: string, b: string): number {
   return Math.round((new Date(b + 'T00:00:00').getTime() - new Date(a + 'T00:00:00').getTime()) / 86400000);
 }
 /* Mesma lógica de nextAppInfo() em app.js — a "próxima aplicação
    prevista" nunca é um dado guardado, é sempre calculada a partir do
    dia da semana configurado pelo paciente + a última aplicação
    registrada. Replicar aqui é reaproveitar a mesma regra, não
-   inventar uma nova. */
-function proximaAplicacao(diaAplicacao: number | null, ultimaAplicacaoData: string | null): number | null {
+   inventar uma nova. Exportada pra patient-detail.ts reaproveitar em
+   vez de duplicar (Sprint 019). */
+export function proximaAplicacao(diaAplicacao: number | null, ultimaAplicacaoData: string | null): number | null {
   if (diaAplicacao == null) return null;
   const now = new Date();
   now.setHours(0, 0, 0, 0);

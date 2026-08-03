@@ -25,7 +25,7 @@ const COLLECTIONS = {
   applications: { table:'applications', cols:{dose:'dose',medicamento:'medicamento',local:'local',obs:'obs'} },
   exams:        { table:'exams',        cols:{tipo:'tipo',valor:'valor'} },
   agenda:       { table:'agenda',       cols:{tipo:'tipo',obs:'obs'} },
-  bio:          { table:'bioimpedance', cols:{gordura:'gordura',massaMagra:'massa_magra',musculo:'musculo',agua:'agua',visceral:'visceral',tmb:'tmb'} },
+  bio:          { table:'bioimpedance', cols:{gordura:'gordura',massaMagraPct:'massa_magra',musculo:'musculo',agua:'agua',visceral:'visceral',tmb:'tmb'} },
 };
 const PROFILE_COLS = {nome:'nome',medicamento:'medicamento',doseAtual:'dose_atual',unidade:'unidade',diaAplicacao:'dia_aplicacao',dataInicio:'data_inicio',pesoInicial:'peso_inicial',pesoMeta:'peso_meta',altura:'altura',metaAgua:'meta_agua',metaProteina:'meta_proteina'};
 const PEN_COLS = {capacidadeMg:'capacidade_mg',doseMg:'dose_mg',usadas:'usadas'};

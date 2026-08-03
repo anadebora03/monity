@@ -1,3 +1,6 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
 import { Avatar } from './Avatar';
 import { Badge } from './Badge';
 import type { PacienteDashboard } from '@/lib/dashboard';
@@ -12,12 +15,11 @@ const STATUS_LABEL: Record<PacienteDashboard['status'], { label: string; tone: '
   sem_dado: { label: 'Sem registros', tone: 'neutral' },
 };
 
-/* Tabela "elegante" pedida na Sprint 017 — sem paginação/ordenação
-   ainda (não pedida), só apresentação. Clicar na linha não navega de
-   verdade nesta sprint ("apenas preparar a navegação para a futura
-   tela de detalhes") — por isso é um <div> com cursor-pointer, não um
-   <Link>, e não faz nada além do hover por enquanto. */
+/* Tabela "elegante" da Sprint 017 — clicar na linha navega pro
+   Perfil 360° do paciente (Sprint 019), o destino que esse
+   cursor-pointer já antecipava desde então. */
 export function PatientTable({ pacientes }: { pacientes: PacienteDashboard[] }) {
+  const router = useRouter();
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[560px] border-collapse text-sm">
@@ -37,6 +39,7 @@ export function PatientTable({ pacientes }: { pacientes: PacienteDashboard[] }) 
               <tr
                 key={p.id}
                 style={{ animationDelay: `${i * 40}ms` }}
+                onClick={() => router.push(`/pro/pacientes/${p.id}`)}
                 className="animate-fade-in cursor-pointer border-b border-slate-50 transition-colors duration-150 ease-out last:border-0 hover:bg-slate-50 dark:border-white/5 dark:hover:bg-white/5"
               >
                 <td className="py-3 pr-4">

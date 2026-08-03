@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Search, Users } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -17,6 +18,7 @@ function diasDesde(iso: string) {
 }
 
 export function PacientesView({ pacientes }: { pacientes: PacienteLista[] }) {
+  const router = useRouter();
   const [busca, setBusca] = useState('');
 
   const filtrados = useMemo(() => {
@@ -77,6 +79,7 @@ export function PacientesView({ pacientes }: { pacientes: PacienteLista[] }) {
                     <tr
                       key={p.id}
                       style={{ animationDelay: `${i * 40}ms` }}
+                      onClick={() => router.push(`/pro/pacientes/${p.id}`)}
                       className="animate-fade-in cursor-pointer border-b border-slate-50 transition-colors duration-150 ease-out last:border-0 hover:bg-slate-50 dark:border-white/5 dark:hover:bg-white/5"
                     >
                       <td className="py-3 pr-4">
