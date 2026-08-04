@@ -1,12 +1,9 @@
-import { FileText } from 'lucide-react';
-import { EmptyState } from '@/components/ui/EmptyState';
+import { createClient } from '@/lib/supabase/server';
+import { listarEmissoes } from '@/lib/report-data';
+import { RelatoriosView } from '@/components/RelatoriosView';
 
-export default function RelatoriosPage() {
-  return (
-    <EmptyState
-      icon={FileText}
-      title="Relatórios em breve"
-      description="Assim que você tiver pacientes vinculados, vai poder gerar relatórios em PDF direto daqui."
-    />
-  );
+export default async function RelatoriosPage() {
+  const supabase = await createClient();
+  const emissoes = await listarEmissoes(supabase);
+  return <RelatoriosView emissoes={emissoes} />;
 }

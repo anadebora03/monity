@@ -1,10 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import { ArrowLeft, FileText, MoreHorizontal } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { ReportModal } from '@/components/patient-detail/ReportModal';
 import type { PatientDetail } from '@/lib/patient-detail';
 
 const STATUS_LABEL: Record<PatientDetail['statusClinico'], { label: string; tone: 'good' | 'warn' | 'neutral' }> = {
@@ -14,6 +16,7 @@ const STATUS_LABEL: Record<PatientDetail['statusClinico'], { label: string; tone
 };
 
 export function PatientHeader({ p }: { p: PatientDetail }) {
+  const [relatorioAberto, setRelatorioAberto] = useState(false);
   const st = STATUS_LABEL[p.statusClinico];
   const info = [
     p.dataInicio ? `Início em ${fmtBR(p.dataInicio)}` : null,
@@ -40,7 +43,13 @@ export function PatientHeader({ p }: { p: PatientDetail }) {
           </div>
         </div>
         <div className="flex shrink-0 gap-2">
-          <Button variant="secondary" size="sm" disabled title="Disponível em breve">
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={!p.perfilCompleto}
+            title={p.perfilCompleto ? undefined : 'O paciente ainda não completou o próprio cadastro no app'}
+            onClick={() => setRelatorioAberto(true)}
+          >
             <FileText size={15} strokeWidth={2} />
             Gerar relatório
           </Button>
@@ -50,6 +59,7 @@ export function PatientHeader({ p }: { p: PatientDetail }) {
           </Button>
         </div>
       </div>
+      <ReportModal open={relatorioAberto} onClose={() => setRelatorioAberto(false)} patientId={p.patientId} />
     </div>
   );
 }

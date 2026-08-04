@@ -29,6 +29,7 @@ let NOTIF=null; // API de lembretes (js/notifications.js), idem
 let INSIGHTS=null; // API de análise (js/insights.js), idem
 let TIMELINE=null; // API da linha do tempo (js/timeline.js), idem
 let ACTIONPLAN=null; // API do plano de ação (js/actionplan.js), idem
+let REPORT=null; // motor único de relatório (js/report-engine.js, Sprint 020), idem
 let LICENSE=null; // API de licenciamento (js/license.js), idem
 let FEATURES=null; // catálogo de recursos do motor de licenciamento — nunca strings soltas
 function persistLocal(){
@@ -2047,43 +2048,21 @@ function periodoRange(){
   return{ini:ini||todayISOback(29), fim:fim||hoje};
 }
 
-/* -------- coleta de dados do período -------- */
+/* -------- coleta de dados do período --------
+   Delega pro motor único (js/report-engine.js, Sprint 020) — mesma
+   lógica de sempre, só que agora compartilhada com o Compasso Pro.
+   Assinatura preservada: os demais call sites (buildInsightContext,
+   relatorioView, gerarRelatorio) continuam chamando coletaDados(ini,fim)
+   sem saber que a implementação mudou de lugar. */
 function coletaDados(ini,fim){
-  const inRange=d=>d>=ini&&d<=fim;
-  const w=sortedWeigh().filter(x=>inRange(x.date));
-  const apps=S.applications.filter(x=>inRange(x.date)).sort((a,b)=>a.date<b.date?-1:1);
-  const logs=Object.entries(S.dailyLogs).filter(([d])=>inRange(d)).map(([d,l])=>({date:d,...l})).sort((a,b)=>a.date<b.date?-1:1);
-  const bio=(S.bio||[]).filter(x=>inRange(x.date)).sort((a,b)=>a.date<b.date?-1:1);
-  const exams=S.exams.filter(x=>inRange(x.date));
-  // peso início/fim do período
-  const allW=sortedWeigh();
-  const pesoIniPeriod=w.length?w[0].peso:(allW.length?allW[0].peso:S.profile.pesoInicial);
-  const pesoFimPeriod=w.length?w[w.length-1].peso:currentWeight();
-  const varPeso=+(pesoFimPeriod-pesoIniPeriod).toFixed(1);
-  // hidratação
-  const diasAgua=logs.filter(l=>l.agua>0);
-  const mediaAgua=diasAgua.length?+(diasAgua.reduce((s,l)=>s+l.agua,0)/diasAgua.length).toFixed(1):0;
-  const metaAguaAtingida=diasAgua.filter(l=>l.agua>=S.profile.metaAgua).length;
-  // proteína
-  const diasProt=logs.filter(l=>l.proteina>0);
-  const mediaProt=diasProt.length?Math.round(diasProt.reduce((s,l)=>s+l.proteina,0)/diasProt.length):0;
-  const adesaoProt=S.profile.metaProteina?Math.round(mediaProt/S.profile.metaProteina*100):0;
-  // sintomas
-  const contSint={};
-  logs.forEach(l=>(l.sintomas||[]).filter(s=>s!=='Sem sintomas').forEach(s=>{contSint[s]=(contSint[s]||0)+1;}));
-  // humor médio
-  const diasHumor=logs.filter(l=>l.humor>0);
-  const mediaHumor=diasHumor.length?+(diasHumor.reduce((s,l)=>s+l.humor,0)/diasHumor.length).toFixed(1):0;
-  // apetite
-  const aOrd=['Muito baixo','Baixo','Normal','Alto','Muito alto'];
-  const contAp={};logs.forEach(l=>{if(l.apetite)contAp[l.apetite]=(contAp[l.apetite]||0)+1;});
-  const apetiteDom=Object.entries(contAp).sort((a,b)=>b[1]-a[1])[0]?.[0]||'';
-  // próxima aplicação
-  const na=nextAppInfo();
-  const lastAppObj=lastApp();
-  return{w,apps,logs,bio,exams,pesoIniPeriod,pesoFimPeriod,varPeso,
-    mediaAgua,metaAguaAtingida,diasTotal:logs.length,mediaProt,adesaoProt,
-    contSint,mediaHumor,apetiteDom,na,lastAppObj};
+  return REPORT.coletaDados({
+    weighings: S.weighings,
+    applications: S.applications,
+    dailyLogs: Object.entries(S.dailyLogs).map(([date,l])=>({date,...l})),
+    bio: S.bio||[],
+    exams: S.exams,
+    profile: S.profile,
+  }, ini, fim);
 }
 
 /* Contexto para js/insights.js — reaproveita coletaDados() (nunca recalcula
@@ -2129,465 +2108,37 @@ function buildActionPlanContext(){
   };
 }
 
-/* -------- resumo automático -------- */
+/* -------- resumo automático -------- Delega pro motor único (Sprint 020). */
 function gerarResumo(d,ini,fim){
-  const frases=[];
-
-  // peso
-  if(d.varPeso<0) frases.push(`No período avaliado (${fmtBRy(ini)} a ${fmtBRy(fim)}), o peso apresentou redução de ${nf(Math.abs(d.varPeso))} kg.`);
-  else if(d.varPeso===0) frases.push(`No período avaliado (${fmtBRy(ini)} a ${fmtBRy(fim)}), o peso manteve-se estável.`);
-  else frases.push(`No período avaliado (${fmtBRy(ini)} a ${fmtBRy(fim)}), houve variação de +${nf(d.varPeso)} kg no peso.`);
-
-  // hidratação + proteína
-  const hidTxt=d.mediaAgua>=S.profile.metaAgua*0.85?'manteve-se em nível satisfatório'
-    :d.mediaAgua>0?'ficou abaixo da meta diária estabelecida':null;
-  const protTxt=d.adesaoProt>=90?'a meta proteica foi bem atendida'
-    :d.adesaoProt>=70?'a ingestão proteica ficou próxima da meta'
-    :d.adesaoProt>0?'a ingestão proteica esteve abaixo da meta'
-    :null;
-  if(hidTxt&&protTxt) frases.push(`A hidratação ${hidTxt}, e ${protTxt}.`);
-  else if(hidTxt) frases.push(`A hidratação ${hidTxt}.`);
-  else if(protTxt) frases.push(`Quanto à alimentação, ${protTxt}.`);
-
-  // sintomas + aplicações
-  const nSint=Object.values(d.contSint).reduce((s,v)=>s+v,0);
-  const sintTxt=nSint===0?'Não foram registrados sintomas relevantes no período'
-    :nSint<=3?'Os sintomas registrados foram leves e ocasionais'
-    :'Foram registrados sintomas com certa frequência ao longo do período';
-  const appTxt=d.apps.length>0?`, com ${d.apps.length} ${plural(d.apps.length,'aplicação','aplicações')} de ${esc(S.profile.medicamento)} ${plural(d.apps.length,'realizada','realizadas')} no intervalo`:'';
-  frases.push(`${sintTxt}${appTxt}.`);
-
-  frases.push('Este relatório foi gerado automaticamente a partir dos registros do paciente e não substitui a avaliação do médico ou nutricionista responsável.');
-  return frases.join(' ');
+  return REPORT.gerarResumo(d,ini,fim,S.profile);
 }
 
 /* ============================================================
-   GERADOR PDF CANVAS · A4 retrato, unidades em pontos (pt)
-   Canvas nativo, sem bibliotecas externas.
-   ============================================================ */
-/* ============================================================
-   buildPDF + mostrarPreview · HTML com @media print A4
-   Abre numa nova aba; window.print() gera PDF A4 perfeito.
+   buildPDF · Delega pro motor único (js/report-engine.js, Sprint 020).
+   Monta o contexto específico deste ambiente (timeline/insights/plano
+   de ação vêm dos motores locais, com efeitos colaterais só daqui —
+   histórico de insights em localStorage etc.) e entrega pronto pro
+   REPORT.buildPDF(), que é o mesmo motor que o Compasso Pro chama.
    ============================================================ */
 function buildPDF(d,ini,fim){
-  const p=S.profile;
-  const na=d.na;
-  const falta=+(currentWeight()-p.pesoMeta).toFixed(1);
-  const adesaoProt=d.adesaoProt; // reaproveita o valor já calculado (com guarda correta) em coletaDados()
-  const H=['','Muito baixo','Baixo','Moderado','Bom','Muito bom'];
-  const diasHumor=d.logs.filter(l=>l.humor>0);
-  const sintomasTodos=['Náusea','Azia','Vômito','Constipação','Diarreia','Dor de cabeça','Fadiga','Gases'];
-  const comSint=sintomasTodos.filter(s=>d.contSint[s]>0);
   const tlPeriodo = TIMELINE ? TIMELINE.gerar(buildTimelineContext(),{ini,fim}) : [];
   // no relatório, só os mais relevantes do período (não todos) — mesmo princípio já usado pros insights,
   // mas reordenados de volta pra cronológico depois de escolhidos, pra continuar lendo como narrativa
   const tl = tlPeriodo.length>25
     ? [...tlPeriodo].sort((a,b)=>a.prioridade-b.prioridade).slice(0,25).sort((a,b)=>a.data<b.data?-1:1)
     : tlPeriodo;
-
-  /* gráfico SVG inline */
-  function sparkSVG(weighings){
-    if(weighings.length<2) return '';
-    const W=480,H=112,pl=38,pr=10,pt=16,pb=26;
-    const ys=weighings.map(w=>w.peso);
-    const goal=p.pesoMeta;
-    const mn=Math.min(...ys,goal)-0.5, mx=Math.max(...ys)+0.5, rng=(mx-mn)||1;
-    const X=i=>pl+(i/(weighings.length-1))*(W-pl-pr);
-    const Y=v=>pt+(1-(v-mn)/rng)*(H-pt-pb);
-    const path=weighings.map((w,i)=>(i?'L':'M')+X(i).toFixed(1)+','+Y(w.peso).toFixed(1)).join(' ');
-    const area=path+` L${X(weighings.length-1).toFixed(1)},${(H-pb).toFixed(1)} L${X(0).toFixed(1)},${(H-pb).toFixed(1)} Z`;
-    const gy=Y(goal);
-    /* y-axis labels */
-    const yLabels=[mn,mn+(mx-mn)/2,mx].map(v=>{
-      const cy=Y(v);
-      return `<text x="${pl-4}" y="${cy+4}" text-anchor="end" font-size="8" fill="var(--gray)" font-family="Arial">${nf(v)}</text>
-<line x1="${pl}" y1="${cy}" x2="${W-pr}" y2="${cy}" stroke="var(--border)" stroke-width="0.8"/>`;
-    }).join('');
-    return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;margin:12px 0 4px">
-      <defs><linearGradient id="rg" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="var(--blue)" stop-opacity=".16"/>
-        <stop offset="1" stop-color="var(--blue)" stop-opacity="0"/></linearGradient></defs>
-      ${yLabels}
-      ${goal>mn&&goal<mx?`<line x1="${pl}" y1="${gy.toFixed(1)}" x2="${W-pr}" y2="${gy.toFixed(1)}" stroke="var(--amber)" stroke-width="1.2" stroke-dasharray="5,3"/>
-        <text x="${W-pr}" y="${(gy-3).toFixed(1)}" text-anchor="end" font-size="8" fill="var(--amber)" font-family="Arial">meta ${nf(goal)}</text>`:''}
-      <path d="${area}" fill="url(#rg)"/>
-      <polyline points="${weighings.map((w,i)=>X(i).toFixed(1)+','+Y(w.peso).toFixed(1)).join(' ')}" fill="none" stroke="var(--blue)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
-      ${weighings.map((w,i)=>`<circle cx="${X(i).toFixed(1)}" cy="${Y(w.peso).toFixed(1)}" r="${i===weighings.length-1?3:1.8}" fill="${i===weighings.length-1?'var(--navy)':'var(--blue)'}" stroke="#fff" stroke-width="1.2"/>`).join('')}
-      <text x="${X(0).toFixed(1)}" y="${H-4}" font-size="8" fill="var(--gray)" font-family="Arial">${fmtBR(weighings[0].date)}</text>
-      <text x="${X(weighings.length-1).toFixed(1)}" y="${H-4}" text-anchor="end" font-size="8" fill="var(--gray)" font-family="Arial">${fmtBR(weighings[weighings.length-1].date)}</text>
-    </svg>`;
-  }
-
-  /* evolução das medidas corporais (desde o início do tratamento) */
-  function pillDiff(diff,txt){
-    if(diff==null) return `<span class="pill flat">—</span>`;
-    return `<span class="pill ${diff<=0?'pos':'neg'}">${txt}</span>`;
-  }
-  function medidasSec(){
-    const measures=[['cintura','Cintura'],['abdomen','Abdômen'],['quadril','Quadril'],['braco','Braço'],['coxa','Coxa']];
-    const wAll=sortedWeigh();
-    const rows=measures.map(([k,lbl])=>{
-      const withM=wAll.filter(x=>x[k]!=null);
-      if(!withM.length) return '';
-      const f=withM[0][k], l=withM[withM.length-1][k];
-      const single=withM.length<2;
-      const diff=single?null:+(l-f).toFixed(1);
-      return `<tr>
-        <td>${lbl}</td>
-        <td>${single?'—':nf(f)+' cm'}</td>
-        <td style="font-weight:600;color:var(--navy)">${nf(l)} cm</td>
-        <td>${pillDiff(diff,diff==null?'—':(diff<=0?'−':'+')+nf(Math.abs(diff))+' cm')}</td>
-      </tr>`;
-    }).join('');
-    if(!rows) return '';
-    return `<div class="section">
-      <div class="section-head"><span class="dot"></span><span class="section-title">Evolução das medidas corporais</span></div>
-      <p class="nota">Comparativo desde o início do tratamento (${fmtBRy(p.dataInicio)})</p>
-      <div class="dt"><table><thead><tr><th style="text-align:left">Medida</th><th>Inicial</th><th>Atual</th><th>Diferença</th></tr></thead>
-      <tbody>${rows}</tbody></table></div></div>`;
-  }
-
-  /* evolução da bioimpedância */
-  function bioSec(){
-    if(!d.bio||!d.bio.length) return '';
-    const BIOM=[['gordura','Gordura corporal','%','down'],['massaMagraPct','Massa muscular (%)','%','up'],
-      ['musculo','Massa muscular (kg)','kg','up'],['agua','Água corporal','%','up'],
-      ['visceral','Gordura visceral','','down'],['tmb','Metabolismo basal','kcal','up']];
-    const bf=d.bio[0], bl=d.bio[d.bio.length-1];
-    const single=d.bio.length<2;
-    const rows=BIOM.filter(([k])=>bf[k]!=null||bl[k]!=null).map(([k,lbl,u,better])=>{
-      const dec=u==='kcal'?0:1;
-      const vi=bf[k], va=bl[k];
-      const diff=(!single&&vi!=null&&va!=null)?+(va-vi).toFixed(2):null;
-      const goodDiff=diff!=null&&(better==='down'?diff>0:diff<0)?-diff:diff; // normaliza sinal do pill p/ "melhora=azul"
-      return `<tr>
-        <td>${lbl}</td>
-        <td>${single?'—':(vi!=null?nf(vi,dec)+' '+u:'—')}</td>
-        <td style="font-weight:600;color:var(--navy)">${va!=null?nf(va,dec)+' '+u:'—'}</td>
-        <td>${pillDiff(goodDiff,diff==null?'—':(diff<=0?'−':'+')+nf(Math.abs(diff),dec)+' '+u)}</td>
-      </tr>`;
-    }).join('');
-    if(!rows) return '';
-    const nota=single?`1 registro no período, em ${fmtBRy(bf.date)} — comparativo indisponível.`:`Comparativo entre ${fmtBRy(bf.date)} e ${fmtBRy(bl.date)}`;
-    return `<div class="section">
-      <div class="section-head"><span class="dot"></span><span class="section-title">Evolução da bioimpedância</span></div>
-      <p class="nota">${nota}</p>
-      <div class="dt"><table><thead><tr><th style="text-align:left">Indicador</th><th>Inicial</th><th>Atual</th><th>Diferença</th></tr></thead>
-      <tbody>${rows}</tbody></table></div></div>`;
-  }
-
-  /* resumo executivo — itens secundários (os 3 principais viram hero-stats abaixo) */
-  const topSint=Object.entries(d.contSint).sort((a,b)=>b[1]-a[1])[0];
-  const rxSecundario=[
-    ['Peso inicial do período',nf(d.pesoIniPeriod)+' kg'],
-    ['Peso atual',nf(d.pesoFimPeriod)+' kg'],
-    ['Dose atual',esc(p.doseAtual)+' '+esc(p.unidade)],
-    ['Adesão à meta proteica',d.mediaProt>0?adesaoProt+'%':'—'],
-    ['Média de hidratação',(d.diasTotal>0&&d.mediaAgua>0)?nf(d.mediaAgua)+' L':'—'],
-    ['Principal sintoma',topSint?`${topSint[0]} (${topSint[1]}d)`:'Nenhum registrado'],
-  ];
-
-  return `<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Compasso · Relatório · ${esc(p.nome)}</title>
-<style>
-/* ── paleta institucional (Design System Compasso — versão impressão) ── */
-:root{
-  --navy:#16294A; --blue:#2E6FC9; --blue-light:#4FA0FA; --blue-soft:#EAF2FE;
-  --ink:#1F2937; --gray:#64748B; --gray-soft:#94A3B8;
-  --border:#E5E9F0; --bg-soft:#F7F9FC; --amber:#D99A2B; --amber-soft:#FBF1DD;
-  --symptom:#C0524A; --symptom-soft:#FBEDEC; --radius:12px;
-}
-
-/* ── reset ── */
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
-  font-size:9pt;font-weight:400;color:var(--ink);background:#fff;
-  -webkit-print-color-adjust:exact;print-color-adjust:exact}
-
-/* ── página A4 ── */
-@page{size:A4 portrait;margin:16mm 16mm 18mm 16mm}
-.page{width:100%;max-width:180mm;margin:0 auto;padding:0}
-
-/* ── masthead + capa ── */
-.masthead{display:flex;align-items:center;gap:7px;margin-bottom:28px}
-.masthead span{font-size:7.5pt;font-weight:700;letter-spacing:.18em;color:var(--gray);text-transform:uppercase}
-.cover{padding-bottom:22px;border-bottom:1px solid var(--border);margin-bottom:6px;page-break-inside:avoid}
-.cover-kicker{font-size:7.5pt;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);font-weight:700;margin-bottom:10px}
-.cover-name{font-size:23pt;font-weight:700;color:var(--navy);letter-spacing:-.015em;margin-bottom:13px}
-.cover-meta{display:flex;gap:24px;flex-wrap:wrap;font-size:8pt;color:var(--gray);margin-bottom:15px}
-.cover-meta b{color:var(--navy);font-weight:600}
-.cover-disc{font-size:7pt;color:var(--gray-soft);line-height:1.65}
-
-/* ── seções ── */
-.section{margin-top:32px;page-break-inside:avoid}
-.section-head{display:flex;align-items:center;gap:8px;margin-bottom:15px}
-.section-head .dot{width:5px;height:5px;border-radius:50%;background:var(--blue);flex:0 0 auto}
-.section-title{font-size:10.5pt;font-weight:700;color:var(--navy);letter-spacing:-.005em}
-
-/* ── hero stats (métricas principais em destaque) ── */
-.hero-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-.hero-stat{border:1px solid rgba(226,233,240,.8);border-radius:var(--radius);padding:17px 16px;
-  background:var(--bg-soft);box-shadow:0 1px 2px rgba(22,41,74,.04)}
-.hero-stat.accent{background:var(--blue-soft);border-color:rgba(46,111,201,.16)}
-.hero-stat.accent.warn{background:var(--amber-soft);border-color:rgba(217,154,43,.18)}
-.hs-label{font-size:7pt;text-transform:uppercase;letter-spacing:.05em;color:var(--gray);font-weight:600;margin-bottom:8px}
-.hs-val{font-size:16.5pt;font-weight:700;color:var(--navy);letter-spacing:-.01em}
-.hero-stat.accent .hs-val{color:var(--blue)}
-.hero-stat.accent.warn .hs-val{color:var(--amber)}
-.hs-val small{font-size:8.5pt;font-weight:500;color:var(--gray)}
-.hs-sub{font-size:7pt;color:var(--gray);margin-top:6px}
-
-/* ── card leve (grade de informações) ── */
-.card{background:#fff;border:1px solid rgba(226,233,240,.8);border-radius:var(--radius);
-  padding:4px 0;box-shadow:0 1px 2px rgba(22,41,74,.04)}
-.kv{display:grid;grid-template-columns:1fr 1fr;background:var(--bg-soft);
-  border:1px solid rgba(226,233,240,.8);border-radius:var(--radius);overflow:hidden;
-  box-shadow:0 1px 2px rgba(22,41,74,.04)}
-.kv.c3{grid-template-columns:1fr 1fr 1fr}
-.kc{padding:13px 16px;border-bottom:1px solid var(--border)}
-.kl{font-size:7pt;color:var(--gray);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px}
-.kv2{font-size:10pt;font-weight:700;color:var(--navy)}
-
-/* ── hábitos (hidratação + proteína) ── */
-.habit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
-.habit-card{border:1px solid rgba(226,233,240,.8);border-radius:var(--radius);padding:16px 17px;
-  background:#fff;box-shadow:0 1px 2px rgba(22,41,74,.04)}
-.habit-card .kl{margin-bottom:9px}
-.habit-val{font-size:14pt;font-weight:700;color:var(--navy);margin-bottom:10px}
-.habit-val small{font-size:8pt;font-weight:500;color:var(--gray)}
-.barw{background:var(--border);border-radius:999px;height:5px;overflow:hidden;margin-bottom:9px}
-.barf{height:100%;background:linear-gradient(90deg,var(--blue),var(--blue-light));border-radius:999px}
-.habit-sub{font-size:7pt;color:var(--gray)}
-
-/* ── bem-estar: check-in + sintomas ── */
-.chip-list{display:flex;flex-wrap:wrap;gap:8px}
-.chip{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:999px;
-  background:var(--symptom-soft);border:1px solid rgba(192,82,74,.18)}
-.chip-n{font-weight:700;color:var(--symptom);font-size:8.5pt}
-.chip-d{font-size:7pt;color:var(--symptom);opacity:.75}
-
-/* ── tabelas em cartão (medidas / bioimpedância) ── */
-.dt{border:1px solid rgba(226,233,240,.8);border-radius:var(--radius);overflow:hidden;
-  box-shadow:0 1px 2px rgba(22,41,74,.04)}
-.dt table{width:100%;border-collapse:collapse}
-.dt th{font-size:7pt;color:var(--gray);font-weight:700;text-transform:uppercase;letter-spacing:.03em;
-  text-align:center;padding:10px 12px;border-bottom:1px solid var(--border)}
-.dt th:first-child{text-align:left}
-.dt td{font-size:9pt;font-weight:400;padding:11px 12px;border-bottom:1px solid var(--border);color:var(--ink);text-align:center}
-.dt td:first-child{text-align:left}
-.dt tbody tr:last-child td{border-bottom:none}
-.dt tbody tr:nth-child(even){background:var(--bg-soft)}
-.pill{display:inline-block;padding:3px 11px;border-radius:999px;font-size:8pt;font-weight:700}
-.pill.pos{background:var(--blue-soft);color:var(--blue)}
-.pill.neg{background:var(--amber-soft);color:var(--amber)}
-.pill.flat{background:var(--bg-soft);color:var(--gray-soft)}
-
-/* ── timeline ── */
-.tl{position:relative;padding-left:16px}
-.tl:before{content:"";position:absolute;left:3px;top:2px;bottom:2px;width:1px;background:var(--border)}
-.te{position:relative;padding:0 0 13px;page-break-inside:avoid}
-.te:before{content:"";position:absolute;left:-13.5px;top:3px;width:5px;height:5px;
-  border-radius:50%;background:var(--blue);border:1.5px solid #fff;box-shadow:0 0 0 1px var(--blue)}
-.te-d{font-size:7pt;font-weight:700;color:var(--blue)}
-.te-t{font-size:8.5pt;font-weight:400;color:var(--ink);margin-top:2px}
-
-/* ── resumo automático (insight) ── */
-.insight{background:var(--blue-soft);border-left:3px solid var(--blue);
-  padding:18px 20px;margin-top:32px;border-radius:0 var(--radius) var(--radius) 0;page-break-inside:avoid}
-.insight-t{font-size:7pt;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--blue);margin-bottom:9px}
-.insight p{font-size:8.5pt;font-weight:400;line-height:1.85;color:var(--ink)}
-
-/* ── footer ── */
-.ftr{margin-top:34px;padding-top:14px;border-top:1px solid var(--border);
-  text-align:center;font-size:7pt;font-weight:400;color:var(--gray-soft);line-height:1.7}
-
-/* ── nota pequena ── */
-.nota{font-size:7.5pt;color:var(--gray);margin-bottom:10px}
-
-/* ── botões (só tela, some na impressão) ── */
-.fab{position:fixed;bottom:18px;right:18px;display:flex;gap:8px;z-index:99}
-.fab button{padding:11px 18px;border-radius:12px;border:none;font-family:inherit;
-  font-size:11pt;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(22,41,74,.22)}
-.fp{background:var(--navy);color:#fff}
-.fc{background:#fff;color:var(--navy);border:1px solid var(--border)}
-
-/* ── print: esconde botões ── */
-@media print{
-  .fab{display:none!important}
-  body{background:#fff}
-  .section{page-break-inside:avoid}
-}
-</style>
-</head>
-<body>
-<div class="page">
-
-<!-- MASTHEAD -->
-<div class="masthead">
-  <svg width="18" height="18" viewBox="0 0 40 40" fill="none">
-    <circle cx="20" cy="20" r="18" stroke="var(--blue)" stroke-width="2.4"/>
-    <path d="M20 6L24 20L20 34L16 20Z" fill="var(--blue-light)"/>
-    <circle cx="20" cy="20" r="3" fill="var(--navy)"/>
-  </svg>
-  <span>Compasso</span>
-</div>
-
-<!-- CAPA -->
-<div class="cover">
-  <div class="cover-kicker">Relatório de evolução</div>
-  <div class="cover-name">${esc(p.nome)}</div>
-  <div class="cover-meta">
-    <span>Período: <b>${fmtBRy(ini)} a ${fmtBRy(fim)}</b> · ${daysBetween(ini,fim)+1} dias</span>
-    <span>Emitido em: <b>${fmtBRy(todayISO())}</b></span>
-  </div>
-  <div class="cover-disc">Este relatório é informativo e não substitui a avaliação do seu médico ou nutricionista. O Compasso é um diário pessoal de acompanhamento.</div>
-</div>
-
-<!-- RESUMO EXECUTIVO -->
-<div class="section">
-  <div class="section-head"><span class="dot"></span><span class="section-title">Resumo executivo</span></div>
-  <div class="hero-grid" style="margin-bottom:12px">
-    <div class="hero-stat accent"><div class="hs-label">Perdido desde o início</div>
-      <div class="hs-val">−${nf(lost())}<small> kg</small></div>
-      <div class="hs-sub">${nf(lostPct())}% do peso inicial</div></div>
-    <div class="hero-stat accent ${d.varPeso>0?'warn':''}"><div class="hs-label">Variação no período</div>
-      <div class="hs-val">${d.varPeso<=0?'−':'+'}${nf(Math.abs(d.varPeso))}<small> kg</small></div></div>
-    <div class="hero-stat"><div class="hs-label">Aplicações no período</div>
-      <div class="hs-val">${d.apps.length}</div></div>
-  </div>
-  <div class="kv c3">
-    ${rxSecundario.map(([lbl,val])=>`<div class="kc"><div class="kl">${lbl}</div><div class="kv2">${val}</div></div>`).join('')}
-  </div>
-</div>
-
-<!-- MEDICAÇÃO -->
-<div class="section">
-  <div class="section-head"><span class="dot"></span><span class="section-title">Medicação</span></div>
-  <div class="kv">
-    <div class="kc"><div class="kl">Medicamento</div><div class="kv2">${esc(p.medicamento)}</div></div>
-    <div class="kc"><div class="kl">Dose atual</div><div class="kv2">${esc(p.doseAtual)} ${esc(p.unidade)}</div></div>
-    <div class="kc"><div class="kl">Frequência</div><div class="kv2">1× por semana</div></div>
-    <div class="kc"><div class="kl">Aplicações no período</div><div class="kv2">${d.apps.length}</div></div>
-    <div class="kc"><div class="kl">Última aplicação</div><div class="kv2">${d.lastAppObj?fmtBRy(d.lastAppObj.date):'—'}</div></div>
-    <div class="kc"><div class="kl">Próxima aplicação</div><div class="kv2">${na.days===0?'Hoje':WD[p.diaAplicacao]+', '+fmtBRy(na.date)}</div></div>
-  </div>
-</div>
-
-<!-- PESO -->
-<div class="section">
-  <div class="section-head"><span class="dot"></span><span class="section-title">Evolução do peso</span></div>
-  <div class="hero-grid" style="margin-bottom:12px">
-    <div class="hero-stat"><div class="hs-label">Início do período</div><div class="hs-val">${nf(d.pesoIniPeriod)}<small> kg</small></div></div>
-    <div class="hero-stat accent ${d.varPeso>0?'warn':''}"><div class="hs-label">Variação</div>
-      <div class="hs-val">${d.varPeso<=0?'−':'+'}${nf(Math.abs(d.varPeso))}<small> kg</small></div></div>
-    <div class="hero-stat"><div class="hs-label">Peso atual</div><div class="hs-val">${nf(d.pesoFimPeriod)}<small> kg</small></div></div>
-  </div>
-  ${d.w.length>=2?`<div class="card" style="padding:12px 12px 8px;margin-bottom:13px">${sparkSVG(d.w)}</div>`:''}
-  <div class="kv">
-    <div class="kc"><div class="kl">Início do tratamento</div><div class="kv2">${fmtBRy(p.dataInicio)}</div></div>
-    <div class="kc"><div class="kl">Peso inicial do tratamento</div><div class="kv2">${nf(p.pesoInicial)} kg</div></div>
-    <div class="kc"><div class="kl">Peso atual</div><div class="kv2">${nf(d.pesoFimPeriod)} kg</div></div>
-    <div class="kc"><div class="kl">Tempo de tratamento</div><div class="kv2">${daysTreat()} dias</div></div>
-    <div class="kc"><div class="kl">Peso meta</div><div class="kv2">${nf(p.pesoMeta)} kg</div></div>
-    <div class="kc"><div class="kl">Falta para a meta</div><div class="kv2">${falta>0?nf(falta)+' kg':'✓ Meta atingida'}</div></div>
-  </div>
-</div>
-
-<!-- MEDIDAS CORPORAIS -->
-${medidasSec()}
-
-<!-- HÁBITOS DO PERÍODO (hidratação + proteína) -->
-${(d.diasTotal>0||d.mediaProt>0)?`<div class="section">
-  <div class="section-head"><span class="dot"></span><span class="section-title">Hábitos do período</span></div>
-  <div class="habit-grid">
-    ${d.diasTotal>0?`<div class="habit-card">
-      <div class="kl">Hidratação</div>
-      <div class="habit-val">${nf(d.mediaAgua)}<small> L/dia</small></div>
-      <div class="barw"><div class="barf" style="width:${Math.min(100,p.metaAgua?d.mediaAgua/p.metaAgua*100:0)}%"></div></div>
-      <div class="habit-sub">Meta ${nf(p.metaAgua)} L · ${d.metaAguaAtingida} de ${d.diasTotal} dias atingida</div>
-    </div>`:''}
-    ${d.mediaProt>0?`<div class="habit-card">
-      <div class="kl">Proteína</div>
-      <div class="habit-val">${d.mediaProt}<small> g/dia</small></div>
-      <div class="barw"><div class="barf" style="width:${Math.min(100,adesaoProt)}%"></div></div>
-      <div class="habit-sub">Meta ${p.metaProteina} g · ${adesaoProt}% de adesão</div>
-    </div>`:''}
-  </div>
-</div>`:''}
-
-<!-- BEM-ESTAR (check-in + sintomas) -->
-<div class="section">
-  <div class="section-head"><span class="dot"></span><span class="section-title">Bem-estar</span></div>
-  ${diasHumor.length>0?`<div class="kv" style="margin-bottom:12px">
-    ${d.mediaHumor>0?`<div class="kc"><div class="kl">Humor médio</div><div class="kv2">${H[Math.round(d.mediaHumor)]||'—'}</div></div>`:''}
-    ${d.apetiteDom?`<div class="kc"><div class="kl">Apetite predominante</div><div class="kv2">${d.apetiteDom}</div></div>`:''}
-  </div>`:''}
-  <div class="kl" style="margin-bottom:9px">Sintomas registrados no período</div>
-  ${comSint.length===0
-    ?'<p class="nota">Nenhum sintoma registrado no período.</p>'
-    :`<div class="chip-list">${comSint.map(s=>`<span class="chip"><span class="chip-n">${s}</span><span class="chip-d">${d.contSint[s]}d</span></span>`).join('')}</div>`}
-</div>
-
-<!-- BIOIMPEDÂNCIA -->
-${bioSec()}
-
-<!-- LINHA DO TEMPO -->
-${tl.length?`<div class="section">
-  <div class="section-head"><span class="dot"></span><span class="section-title">Linha do tempo</span></div>
-  <div class="tl">${tl.map(e=>`
-    <div class="te"><div class="te-d">${fmtBRy(e.data)}</div><div class="te-t">${e.titulo} — ${e.descricao}</div></div>`).join('')}
-  </div>
-</div>`:''}
-
-<!-- INSIGHTS DO PERÍODO (só os mais relevantes, não todos) -->
-${(()=>{
-  const insPeriodo = INSIGHTS ? INSIGHTS.gerar(buildInsightContext(ini,fim),{registrarHistorico:false}).slice(0,5) : [];
-  if(!insPeriodo.length) return '';
-  return `<div class="section">
-    <div class="section-head"><span class="dot"></span><span class="section-title">Insights do período</span></div>
-    ${insPeriodo.map(i=>`<div class="insight" style="margin-bottom:10px">
-      <div class="insight-t">${i.categoria}</div>
-      <p>${i.text} <span style="color:var(--gray)">${i.justificativa}</span></p>
-    </div>`).join('')}
-  </div>`;
-})()}
-
-<!-- PLANO DE ACOMPANHAMENTO (opcional — só ações abertas e de alta prioridade) -->
-${(()=>{
+  const insightsPeriodo = INSIGHTS ? INSIGHTS.gerar(buildInsightContext(ini,fim),{registrarHistorico:false}).slice(0,5) : [];
   const acoesAlta = ACTIONPLAN ? ACTIONPLAN.gerar(buildActionPlanContext()).filter(a=>a.prioridade==='alta' && a.status!=='resolvida') : [];
-  if(!acoesAlta.length) return '';
-  return `<div class="section">
-    <div class="section-head"><span class="dot"></span><span class="section-title">Plano de acompanhamento</span></div>
-    ${acoesAlta.map(a=>`<div class="insight" style="margin-bottom:10px">
-      <div class="insight-t">${esc(a.titulo)}</div>
-      <p>${esc(a.descricao)} <span style="color:var(--gray)">${esc(a.motivo)}</span></p>
-    </div>`).join('')}
-  </div>`;
-})()}
-
-<!-- RESUMO AUTOMÁTICO -->
-<div class="insight">
-  <div class="insight-t">Resumo automático</div>
-  <p>${gerarResumo(d,ini,fim)}</p>
-</div>
-
-<!-- FOOTER -->
-<div class="ftr">Compasso · companheiro de tratamento GLP-1<br>Relatório gerado em ${fmtBRy(todayISO())} · Este documento não substitui a avaliação do seu médico ou nutricionista.</div>
-
-</div><!-- /page -->
-
-<!-- BOTÕES FLUTUANTES (somem na impressão) -->
-<div class="fab">
-  <button class="fc" onclick="window.close()">✕ Fechar</button>
-  <button class="fp" onclick="window.print()">⬇ Imprimir / Salvar PDF</button>
-</div>
-</body>
-</html>`;
+  return REPORT.buildPDF({
+    profile: S.profile,
+    d, ini, fim,
+    allWeighings: S.weighings,
+    timeline: tl,
+    insightsPeriodo,
+    acoesAlta,
+  });
 }
+
 
 function mostrarPreview(html,ini,fim){
   const w=window.open('','_blank');
@@ -2920,6 +2471,16 @@ async function initActionplan(){
     console.error('[ActionPlan] erro ao inicializar:', e);
   }
 }
+async function initReport(){
+  try{
+    REPORT = await Promise.race([
+      window.__reportReady,
+      new Promise(resolve=>setTimeout(()=>resolve(null), 4000)),
+    ]);
+  }catch(e){
+    console.error('[Report] erro ao inicializar:', e);
+  }
+}
 /* Único ponto que informa js/database.js se o backup está autorizado —
    database.js não sabe o que é LICENSE/FEATURES, só recebe um booleano.
    Chamado sempre que o estado da licença pode ter mudado. */
@@ -2964,6 +2525,7 @@ async function boot(){
   await initInsights();
   await initTimeline();
   await initActionplan();
+  await initReport();
   await initLicense();
   await registrarListenerAuth();
   if(AUTH_SCREEN==='nova-senha'){ renderWelcome(); return; }

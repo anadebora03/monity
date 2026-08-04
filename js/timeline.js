@@ -90,7 +90,7 @@ const COLLECTORS = [
   /* ---------- bioimpedância ---------- */
   function colBioimpedancia(ctx){
     const b=(ctx.bio||[]).filter(x=>x&&dataValida(x.date)).sort((a,b)=>a.date<b.date?-1:1);
-    const campos=[['gordura','gordura corporal','%'],['massaMagra','massa magra','kg'],['musculo','massa muscular','kg'],['agua','água corporal','%'],['visceral','gordura visceral',''],['tmb','metabolismo basal','kcal']];
+    const campos=[['gordura','gordura corporal','%'],['massaMagraPct','massa muscular','%'],['musculo','massa muscular','kg'],['agua','água corporal','%'],['visceral','gordura visceral',''],['tmb','metabolismo basal','kcal']];
     return b.map((x,i)=>{
       const partes=campos.filter(([k])=>x[k]!=null).map(([k,lbl,u])=>`${lbl} ${nf(x[k],k==='tmb'?0:1)}${u}`);
       return {

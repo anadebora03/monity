@@ -4,3 +4,10 @@ out
 .env.local
 .env*.local
 npm-debug.log*
+
+.vercel
+.env*
+
+# gerado por scripts/sync-shared.js a partir de js/*.js (raiz do repo) —
+# nunca editar aqui nem versionar; sempre recriado no predev/prebuild.
+public/shared-engine
