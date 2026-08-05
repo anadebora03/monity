@@ -24,7 +24,12 @@ const MODULOS_LABELS: { key: keyof ModulosRelatorio; label: string }[] = [
   { key: 'planoAcao', label: 'Plano de ação' },
   { key: 'timeline', label: 'Linha do tempo' },
   { key: 'insights', label: 'Insights' },
+  { key: 'planoTerapeutico', label: 'Plano terapêutico' },
 ];
+// fica fora de MODULOS_LABELS de propósito — é o único módulo com
+// conteúdo que o paciente nunca deve ver, então vem desmarcado por
+// padrão (MODULOS_PADRAO) e com aviso próprio, não um checkbox igual
+// aos outros no meio da grade.
 
 const MENSAGENS_LOADING = [
   'Gerando relatório clínico…',
@@ -137,6 +142,16 @@ export function ReportModal({ open, onClose, patientId }: { open: boolean; onClo
                 </label>
               ))}
             </div>
+          </div>
+
+          <div className="rounded-sm border border-warn/20 bg-warn/5 p-3">
+            <label className="flex cursor-pointer items-start gap-2 text-sm text-ink dark:text-white">
+              <input type="checkbox" checked={modulos.assistenteClinico} onChange={() => toggleModulo('assistenteClinico')} className="mt-0.5 h-4 w-4 rounded accent-accent" />
+              <span>
+                <span className="font-medium">Incluir Assistente Clínico</span>
+                <span className="mt-0.5 block text-xs text-ink-faint dark:text-white/40">Conteúdo de uso profissional — avalie antes de compartilhar este relatório com o paciente.</span>
+              </span>
+            </label>
           </div>
 
           <Button onClick={gerar} className="w-full">

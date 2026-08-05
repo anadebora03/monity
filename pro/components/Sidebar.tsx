@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Users, Mail, FileText, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, Mail, FileText, Settings, LogOut, CalendarDays } from 'lucide-react';
 import { signOut } from '@/lib/auth';
 import { Logo } from '@/components/ui/Logo';
 import { Avatar } from '@/components/ui/Avatar';
@@ -10,6 +10,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 
 const NAV_ITEMS = [
   { href: '/pro', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/pro/agenda', label: 'Agenda', icon: CalendarDays },
   { href: '/pro/pacientes', label: 'Pacientes', icon: Users },
   { href: '/pro/convites', label: 'Convites', icon: Mail },
   { href: '/pro/relatorios', label: 'Relatórios', icon: FileText },

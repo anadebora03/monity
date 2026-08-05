@@ -1,8 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Search, Users } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Search, Users, X } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/ui/Avatar';
@@ -19,13 +19,17 @@ function diasDesde(iso: string) {
 
 export function PacientesView({ pacientes }: { pacientes: PacienteLista[] }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const filtroAtencao = searchParams.get('atencao') === '1';
   const [busca, setBusca] = useState('');
 
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
-    if (!q) return pacientes;
-    return pacientes.filter((p) => p.nome.toLowerCase().includes(q) || p.email?.toLowerCase().includes(q));
-  }, [busca, pacientes]);
+    let lista = pacientes;
+    if (filtroAtencao) lista = lista.filter((p) => p.perfilCompleto && diasDesde(p.ultimoRegistro) > 10);
+    if (!q) return lista;
+    return lista.filter((p) => p.nome.toLowerCase().includes(q) || p.email?.toLowerCase().includes(q));
+  }, [busca, pacientes, filtroAtencao]);
 
   if (pacientes.length === 0) {
     return (
@@ -46,6 +50,16 @@ export function PacientesView({ pacientes }: { pacientes: PacienteLista[] }) {
         {pacientes.length} paciente{pacientes.length > 1 ? 's' : ''} vinculado{pacientes.length > 1 ? 's' : ''}.
       </p>
 
+      {filtroAtencao && (
+        <button
+          onClick={() => router.push('/pro/pacientes')}
+          className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-warn/10 px-3 py-1.5 text-xs font-semibold text-warn transition-opacity hover:opacity-80 dark:bg-warn/15"
+        >
+          Filtrando: pacientes em atenção
+          <X size={13} strokeWidth={2.5} />
+        </button>
+      )}
+
       <div className="relative mt-6 max-w-sm">
         <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint dark:text-white/40" />
         <input
@@ -59,7 +73,7 @@ export function PacientesView({ pacientes }: { pacientes: PacienteLista[] }) {
       <Card className="mt-4 animate-fade-in">
         {filtrados.length === 0 ? (
           <p className="py-6 text-center text-sm text-ink-faint dark:text-white/40">
-            Nenhum paciente encontrado para &ldquo;{busca}&rdquo;.
+            {busca ? <>Nenhum paciente encontrado para &ldquo;{busca}&rdquo;.</> : 'Nenhum paciente precisa de atenção agora.'}
           </p>
         ) : (
           <div className="overflow-x-auto">

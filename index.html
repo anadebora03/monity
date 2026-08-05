@@ -39,6 +39,7 @@
   window.__timelineReady = new Promise((resolve) => { window.__resolveTimelineReady = resolve; });
   window.__actionplanReady = new Promise((resolve) => { window.__resolveActionplanReady = resolve; });
   window.__reportReady = new Promise((resolve) => { window.__resolveReportReady = resolve; });
+  window.__planoTerapeuticoReady = new Promise((resolve) => { window.__resolvePlanoTerapeuticoReady = resolve; });
   window.__licenseReady = new Promise((resolve) => { window.__resolveLicenseReady = resolve; });
 </script>
 <script src="app.js"></script>
@@ -50,6 +51,7 @@
 <script type="module" src="js/timeline.js"></script>
 <script type="module" src="js/actionplan.js"></script>
 <script type="module" src="js/report-engine.js"></script>
+<script type="module" src="js/plano-terapeutico.js"></script>
 <script type="module" src="js/license.js"></script>
 <script>
   if ('serviceWorker' in navigator) {

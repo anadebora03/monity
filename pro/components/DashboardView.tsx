@@ -1,4 +1,5 @@
-import { Users, RefreshCw, AlertCircle, Syringe, UserPlus, Compass } from 'lucide-react';
+import Link from 'next/link';
+import { Users, RefreshCw, AlertCircle, Syringe, UserPlus, Compass, ClipboardList } from 'lucide-react';
 import type { DashboardData } from '@/lib/dashboard';
 import { HeroCard, Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -80,13 +81,13 @@ export function DashboardView({ nome, d }: { nome: string; d: DashboardData }) {
             .join(' · ')}
         />
         <StatCard icon={RefreshCw} label="Atualizações hoje" value={d.atualizacoesHoje} caption="pacientes atualizaram dados" />
-        <StatCard
-          icon={AlertCircle}
-          label="Atenção necessária"
-          value={d.emAtencao}
-          tone={d.emAtencao > 0 ? 'warn' : 'accent'}
-          caption={d.emAtencao > 0 ? 'precisam de acompanhamento' : 'nenhum alerta agora'}
-        />
+        {d.emAtencao > 0 ? (
+          <Link href="/pro/pacientes?atencao=1" className="block">
+            <StatCard icon={AlertCircle} label="Atenção necessária" value={d.emAtencao} tone="warn" caption="precisam de acompanhamento — ver lista" />
+          </Link>
+        ) : (
+          <StatCard icon={AlertCircle} label="Atenção necessária" value={d.emAtencao} tone="accent" caption="nenhum alerta agora" />
+        )}
         <StatCard
           icon={Syringe}
           label="Próximas aplicações"
@@ -135,18 +136,21 @@ export function DashboardView({ nome, d }: { nome: string; d: DashboardData }) {
           </Card>
 
           <Card className="animate-fade-in">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[.09em] text-ink-faint dark:text-white/40">
-              Agenda de hoje
-            </p>
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-[.09em] text-ink-faint dark:text-white/40">Agenda de hoje</p>
+              <Link href="/pro/agenda" className="text-xs font-medium text-accent hover:underline dark:text-accent-light">
+                Ver agenda
+              </Link>
+            </div>
             {d.agendaHoje.length > 0 ? (
               <ul className="space-y-3">
                 {d.agendaHoje.map((a, i) => (
-                  <li key={i} className="text-sm">
-                    <p className="font-medium text-ink dark:text-white">{a.pacienteNome}</p>
-                    <p className="text-ink-faint dark:text-white/40">
-                      {a.tipo}
-                      {a.obs ? ` · ${a.obs}` : ''}
-                    </p>
+                  <li key={i} className="flex items-baseline gap-2 text-sm">
+                    <span className="w-10 shrink-0 font-semibold text-accent dark:text-accent-light">{a.hora ? a.hora.slice(0, 5) : '—'}</span>
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-ink dark:text-white">{a.pacienteNome}</p>
+                      <p className="text-ink-faint dark:text-white/40">{a.tipo}</p>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -156,6 +160,27 @@ export function DashboardView({ nome, d }: { nome: string; d: DashboardData }) {
                 <p className="mt-2 text-sm text-ink-faint dark:text-white/40">Nenhum compromisso hoje.</p>
               </div>
             )}
+          </Card>
+
+          <Card className="animate-fade-in">
+            <div className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[.09em] text-ink-faint dark:text-white/40">
+              <ClipboardList size={13} strokeWidth={2} />
+              Planos terapêuticos
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div>
+                <p className="text-lg font-bold text-ink dark:text-white">{d.planoTerapeutico.pendentes}</p>
+                <p className="text-[11px] text-ink-faint dark:text-white/40">Pendentes</p>
+              </div>
+              <div>
+                <p className="text-lg font-bold text-good">{d.planoTerapeutico.concluidos}</p>
+                <p className="text-[11px] text-ink-faint dark:text-white/40">Concluídos</p>
+              </div>
+              <div>
+                <p className={`text-lg font-bold ${d.planoTerapeutico.emAtraso > 0 ? 'text-danger' : 'text-ink dark:text-white'}`}>{d.planoTerapeutico.emAtraso}</p>
+                <p className="text-[11px] text-ink-faint dark:text-white/40">Em atraso</p>
+              </div>
+            </div>
           </Card>
         </div>
       </div>

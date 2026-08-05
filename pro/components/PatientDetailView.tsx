@@ -16,6 +16,9 @@ import { MedidasTab } from '@/components/patient-detail/tabs/MedidasTab';
 import { BioimpedanciaTab } from '@/components/patient-detail/tabs/BioimpedanciaTab';
 import { ExamesTab } from '@/components/patient-detail/tabs/ExamesTab';
 import { SintomasTab } from '@/components/patient-detail/tabs/SintomasTab';
+import { PlanoTerapeuticoTab } from '@/components/patient-detail/tabs/PlanoTerapeuticoTab';
+import { AssistenteClinicoTab } from '@/components/patient-detail/tabs/AssistenteClinicoTab';
+import type { DadosClinicos } from '@/lib/clinical-intelligence';
 
 const ABAS = [
   { id: 'geral', label: 'Visão geral' },
@@ -26,6 +29,8 @@ const ABAS = [
   { id: 'exames', label: 'Exames' },
   { id: 'sintomas', label: 'Sintomas' },
   { id: 'timeline', label: 'Linha do tempo' },
+  { id: 'plano', label: 'Plano terapêutico' },
+  { id: 'assistente', label: 'Assistente clínico' },
 ] as const;
 type AbaId = (typeof ABAS)[number]['id'];
 
@@ -38,12 +43,12 @@ type AbaId = (typeof ABAS)[number]['id'];
    geral (resumo) é a primeira e mais leve, e o resto só monta sob
    demanda, exatamente na ordem "resumo -> gráficos -> timeline ->
    demais informações" conforme o profissional navega. */
-export function PatientDetailView({ p }: { p: PatientDetail }) {
+export function PatientDetailView({ p, workspaceId, dadosClinicos }: { p: PatientDetail; workspaceId: string; dadosClinicos: DadosClinicos }) {
   const [aba, setAba] = useState<AbaId>('geral');
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-8 sm:px-8">
-      <PatientHeader p={p} />
+      <PatientHeader p={p} workspaceId={workspaceId} />
 
       <div className="mt-6">
         <StatsGrid p={p} />
@@ -105,6 +110,8 @@ export function PatientDetailView({ p }: { p: PatientDetail }) {
             <TimelineList eventos={p.timeline} />
           </Card>
         )}
+        {aba === 'plano' && <PlanoTerapeuticoTab patientId={p.patientId} workspaceId={workspaceId} planoAutomatico={p.planoAcao} />}
+        {aba === 'assistente' && <AssistenteClinicoTab dados={dadosClinicos} />}
       </div>
     </div>
   );

@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowLeft, FileText, MoreHorizontal } from 'lucide-react';
+import { ArrowLeft, FileText, MoreHorizontal, CalendarPlus } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ReportModal } from '@/components/patient-detail/ReportModal';
+import { NovoCompromissoModal } from '@/components/agenda/NovoCompromissoModal';
 import type { PatientDetail } from '@/lib/patient-detail';
 
 const STATUS_LABEL: Record<PatientDetail['statusClinico'], { label: string; tone: 'good' | 'warn' | 'neutral' }> = {
@@ -15,8 +16,9 @@ const STATUS_LABEL: Record<PatientDetail['statusClinico'], { label: string; tone
   sem_dado: { label: 'Aguardando primeiro acesso', tone: 'neutral' },
 };
 
-export function PatientHeader({ p }: { p: PatientDetail }) {
+export function PatientHeader({ p, workspaceId }: { p: PatientDetail; workspaceId: string }) {
   const [relatorioAberto, setRelatorioAberto] = useState(false);
+  const [retornoAberto, setRetornoAberto] = useState(false);
   const st = STATUS_LABEL[p.statusClinico];
   const info = [
     p.dataInicio ? `Início em ${fmtBR(p.dataInicio)}` : null,
@@ -43,6 +45,10 @@ export function PatientHeader({ p }: { p: PatientDetail }) {
           </div>
         </div>
         <div className="flex shrink-0 gap-2">
+          <Button variant="secondary" size="sm" onClick={() => setRetornoAberto(true)}>
+            <CalendarPlus size={15} strokeWidth={2} />
+            Agendar retorno
+          </Button>
           <Button
             variant="secondary"
             size="sm"
@@ -60,6 +66,13 @@ export function PatientHeader({ p }: { p: PatientDetail }) {
         </div>
       </div>
       <ReportModal open={relatorioAberto} onClose={() => setRelatorioAberto(false)} patientId={p.patientId} />
+      <NovoCompromissoModal
+        open={retornoAberto}
+        onClose={() => setRetornoAberto(false)}
+        workspaceId={workspaceId}
+        defaultPatientId={p.patientId}
+        defaultTipo="Retorno"
+      />
     </div>
   );
 }

@@ -1,6 +1,8 @@
 import { UserX } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getPatientDetail } from '@/lib/patient-detail';
+import { getProfessionalInfo } from '@/lib/report-data';
+import { buscarDadosClinicos } from '@/lib/clinical-intelligence';
 import { PatientDetailView } from '@/components/PatientDetailView';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Button } from '@/components/ui/Button';
@@ -9,7 +11,7 @@ import Link from 'next/link';
 export default async function PacienteDetalhePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
-  const paciente = await getPatientDetail(supabase, id);
+  const [paciente, profissional, dadosClinicos] = await Promise.all([getPatientDetail(supabase, id), getProfessionalInfo(supabase), buscarDadosClinicos(supabase, id)]);
 
   if (!paciente.encontrado) {
     return (
@@ -26,5 +28,5 @@ export default async function PacienteDetalhePage({ params }: { params: Promise<
     );
   }
 
-  return <PatientDetailView p={paciente} />;
+  return <PatientDetailView p={paciente} workspaceId={profissional?.workspaceId || ''} dadosClinicos={dadosClinicos} />;
 }

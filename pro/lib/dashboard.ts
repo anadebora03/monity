@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { getPlanoStatsWorkspace, type StatsWorkspacePlano } from './plano-terapeutico-data';
 
 /* Camada de dados do Dashboard (Sprint 017). UMA consulta principal
    (workspace_patient_summary, ver supabase/schema_pro_017.sql) +
@@ -7,10 +8,10 @@ import type { SupabaseClient } from '@supabase/supabase-js';
    (quem está em atenção, o resumo do dia, os insights) é derivada em
    JS a partir desse único resultado, não recalculada no banco.
 
-   Nenhum campo aqui é inventado: "horário" e "status" de agenda não
-   existem no modelo do paciente (agenda só tem date/tipo/obs), então
-   a Agenda do Dia não exibe essas duas colunas — ver AgendaDoDia no
-   dashboard. */
+   "Agenda de hoje" migrou pra `compromissos` na Sprint 021 (era a
+   agenda PESSOAL de cada paciente, `agenda`, um proxy limitado sem
+   horário/status de verdade) — agora é a agenda de verdade do
+   profissional, com hora e status reais. */
 
 type PatientSummaryRow = {
   relationship_id: string;
@@ -29,7 +30,7 @@ type PatientSummaryRow = {
   perfil_completo: boolean;
 };
 
-type AgendaRow = { user_id: string; date: string; tipo: string | null; obs: string | null };
+type AgendaRow = { patient_id: string | null; titulo: string | null; data: string; hora: string | null; tipo: string | null; status: string };
 
 export type PacienteDashboard = {
   id: string;
@@ -53,7 +54,8 @@ export type DashboardData = {
   resumoDia: string[];
   insights: { titulo: string; texto: string; tom: 'good' | 'warn' }[];
   pacientes: PacienteDashboard[];
-  agendaHoje: { pacienteNome: string; tipo: string; obs: string | null }[];
+  agendaHoje: { pacienteNome: string; tipo: string; hora: string | null; status: string }[];
+  planoTerapeutico: StatsWorkspacePlano;
 };
 
 export function todayISO(d = new Date()): string {
@@ -79,12 +81,13 @@ export function proximaAplicacao(diaAplicacao: number | null, ultimaAplicacaoDat
 }
 
 export async function getDashboardData(supabase: SupabaseClient, ownerId: string): Promise<DashboardData> {
-  const [{ data: rows }, { data: usage }] = await Promise.all([
+  const [{ data: rows }, { data: usage }, planoTerapeutico] = await Promise.all([
     supabase
       .from('workspace_patient_summary')
       .select('*')
       .order('ultimo_registro', { ascending: false }),
     supabase.from('workspace_patient_usage').select('patient_limit, patients_used').eq('owner_id', ownerId).maybeSingle(),
+    getPlanoStatsWorkspace(supabase),
   ]);
 
   const summary = (rows ?? []) as PatientSummaryRow[];
@@ -104,15 +107,16 @@ export async function getDashboardData(supabase: SupabaseClient, ownerId: string
       insights: [],
       pacientes: [],
       agendaHoje: [],
+      planoTerapeutico,
     };
   }
 
-  const patientIds = summary.map((r) => r.patient_id);
   const { data: agendaRows } = await supabase
-    .from('agenda')
-    .select('user_id, date, tipo, obs')
-    .in('user_id', patientIds)
-    .eq('date', hoje);
+    .from('compromissos')
+    .select('patient_id, titulo, data, hora, tipo, status')
+    .eq('data', hoje)
+    .neq('status', 'cancelado')
+    .order('hora', { ascending: true, nullsFirst: true });
 
   const nomeById = new Map(summary.map((r) => [r.patient_id, r.nome || 'Paciente']));
 
@@ -194,9 +198,10 @@ export async function getDashboardData(supabase: SupabaseClient, ownerId: string
   }
 
   const agendaHoje = (agendaRows ?? []).map((a: AgendaRow) => ({
-    pacienteNome: nomeById.get(a.user_id) || 'Paciente',
+    pacienteNome: (a.patient_id && nomeById.get(a.patient_id)) || a.titulo || 'Compromisso',
     tipo: a.tipo || 'Compromisso',
-    obs: a.obs,
+    hora: a.hora,
+    status: a.status,
   }));
 
   const limitePlano = usage?.patient_limit ?? null;
@@ -215,5 +220,6 @@ export async function getDashboardData(supabase: SupabaseClient, ownerId: string
     insights,
     pacientes,
     agendaHoje,
+    planoTerapeutico,
   };
 }

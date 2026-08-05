@@ -30,6 +30,8 @@ let INSIGHTS=null; // API de análise (js/insights.js), idem
 let TIMELINE=null; // API da linha do tempo (js/timeline.js), idem
 let ACTIONPLAN=null; // API do plano de ação (js/actionplan.js), idem
 let REPORT=null; // motor único de relatório (js/report-engine.js, Sprint 020), idem
+let PLANO_TERAPEUTICO=null; // API de leitura do plano do profissional (js/plano-terapeutico.js, Sprint 022), idem
+let PLANO_PROF=[]; // cache das orientações do profissional já buscadas (ver boot())
 let LICENSE=null; // API de licenciamento (js/license.js), idem
 let FEATURES=null; // catálogo de recursos do motor de licenciamento — nunca strings soltas
 function persistLocal(){
@@ -676,10 +678,19 @@ function insightsView(){
 
 const PLANO_TONE={alta:'danger',media:'amber',baixa:''};
 const PLANO_STATUS_LABEL={nova:'Nova',em_acompanhamento:'Em acompanhamento',resolvida:'Resolvida'};
+/* Plano Terapêutico do profissional (Sprint 022) — nunca se mistura
+   com o Plano Automático acima: são duas fontes, duas seções, cada
+   uma com seu próprio rótulo de origem, exatamente como pedido
+   ("Nunca misturar"). PLANO_PROF vem de js/plano-terapeutico.js,
+   lido direto do Supabase (não passa por S). */
+const PLANO_PROF_STATUS_LABEL={pendente:'Pendente',em_andamento:'Em andamento',concluido:'Concluído',cancelado:'Cancelado'};
 function planoAcaoView(){
   const acoes=ACTIONPLAN ? ACTIONPLAN.gerar(buildActionPlanContext()) : [];
+  const prof=PLANO_PROF||[];
   return `<div class="scr-title" style="margin-bottom:6px">Plano de ação</div>
   <div class="scr-sub">O que revisar na próxima consulta, a partir dos seus registros. Não substitui a orientação do seu médico e nutricionista.</div>
+
+  <div class="eyebrow2" style="margin:16px 0 6px">Plano criado pelo Compasso</div>
   <div class="gcard mt14"><div class="hist-list">
     ${acoes.length?acoes.map(a=>`<div class="hist-item">
       <div class="badge-glow ${PLANO_TONE[a.prioridade]}">${icon('flag')}</div>
@@ -687,7 +698,25 @@ function planoAcaoView(){
       <div class="r" style="font-size:11px">${a.acionavel===false?'':PLANO_STATUS_LABEL[a.status]+(a.status!=='resolvida'?`<br><button class="btn-pill btn-sm ghost neutral" style="margin-top:4px" onclick="avancarStatusAcao('${esc(a.id)}')">Avançar</button>`:'')}</div>
     </div>`).join('')
       :'<p class="muted center" style="font-size:13px;padding:8px 0">Nenhuma ação pendente no momento — tudo em dia.</p>'}
+  </div></div>
+
+  <div class="eyebrow2" style="margin:20px 0 6px">Plano criado pelo profissional</div>
+  <div class="gcard mt14"><div class="hist-list">
+    ${prof.length?prof.map(o=>`<div class="hist-item">
+      <div class="badge-glow ${PLANO_TONE[o.prioridade]||''}">${icon('flag')}</div>
+      <div><div class="t">${esc(o.titulo)}</div><div class="s">${o.descricao?esc(o.descricao)+' · ':''}${esc(o.categoria)}${o.prazo?' · prazo '+fmtBRy(o.prazo):''}</div></div>
+      <div class="r" style="font-size:11px">${PLANO_PROF_STATUS_LABEL[o.status]||o.status}${(o.permitirConclusao&&o.status!=='concluido'&&o.status!=='cancelado')?`<br><button class="btn-pill btn-sm ghost neutral" style="margin-top:4px" onclick="concluirPlanoProfissional('${esc(o.id)}')">Concluir</button>`:''}</div>
+    </div>`).join('')
+      :'<p class="muted center" style="font-size:13px;padding:8px 0">Nenhuma orientação do seu profissional ainda.</p>'}
   </div></div>`;
+}
+async function concluirPlanoProfissional(id){
+  if(!PLANO_TERAPEUTICO) return;
+  const r=await PLANO_TERAPEUTICO.concluirPlano(id);
+  if(!r.ok){ toast(r.error); return; }
+  toast('Orientação concluída!');
+  PLANO_PROF=await PLANO_TERAPEUTICO.listarPlanosProfissional();
+  render();
 }
 function avancarStatusAcao(id){
   if(!ACTIONPLAN) return;
@@ -2129,6 +2158,7 @@ function buildPDF(d,ini,fim){
     : tlPeriodo;
   const insightsPeriodo = INSIGHTS ? INSIGHTS.gerar(buildInsightContext(ini,fim),{registrarHistorico:false}).slice(0,5) : [];
   const acoesAlta = ACTIONPLAN ? ACTIONPLAN.gerar(buildActionPlanContext()).filter(a=>a.prioridade==='alta' && a.status!=='resolvida') : [];
+  const planoTerapeutico = calcPlanoTerapeuticoStats(PLANO_PROF);
   return REPORT.buildPDF({
     profile: S.profile,
     d, ini, fim,
@@ -2136,7 +2166,21 @@ function buildPDF(d,ini,fim){
     timeline: tl,
     insightsPeriodo,
     acoesAlta,
+    planoTerapeutico,
   });
+}
+
+/* mesmo critério de adesão usado no Pro (pro/lib/plano-terapeutico-data.ts:
+   calcularAdesao) — cancelados não entram no denominador */
+function calcPlanoTerapeuticoStats(planos){
+  const p=planos||[];
+  if(!p.length) return null;
+  const ativos=p.filter(o=>o.status==='pendente'||o.status==='em_andamento').length;
+  const concluidos=p.filter(o=>o.status==='concluido').length;
+  const cancelados=p.filter(o=>o.status==='cancelado').length;
+  const denom=p.length-cancelados;
+  const adesao=denom>0?Math.round(concluidos/denom*100):null;
+  return {ativos,concluidos,adesao};
 }
 
 
@@ -2481,6 +2525,16 @@ async function initReport(){
     console.error('[Report] erro ao inicializar:', e);
   }
 }
+async function initPlanoTerapeutico(){
+  try{
+    PLANO_TERAPEUTICO = await Promise.race([
+      window.__planoTerapeuticoReady,
+      new Promise(resolve=>setTimeout(()=>resolve(null), 4000)),
+    ]);
+  }catch(e){
+    console.error('[PlanoTerapeutico] erro ao inicializar:', e);
+  }
+}
 /* Único ponto que informa js/database.js se o backup está autorizado —
    database.js não sabe o que é LICENSE/FEATURES, só recebe um booleano.
    Chamado sempre que o estado da licença pode ter mudado. */
@@ -2509,7 +2563,12 @@ async function registrarListenerAuth(){
     if(!auth) return;
     auth.onAuthStateChange((event,session)=>{
       if(event==='PASSWORD_RECOVERY'){ AUTH_MSG=null; AUTH_SCREEN='nova-senha'; renderWelcome(); }
-      else if(event==='SIGNED_IN'){ AUTH_SCREEN='welcome'; if(DB) DB.setUser(session&&session.user&&session.user.id); render(); }
+      else if(event==='SIGNED_IN'){
+        AUTH_SCREEN='welcome';
+        if(DB) DB.setUser(session&&session.user&&session.user.id);
+        if(PLANO_TERAPEUTICO) PLANO_TERAPEUTICO.listarPlanosProfissional().then(p=>{ PLANO_PROF=p; render(); });
+        render();
+      }
       else if(event==='SIGNED_OUT'){ AUTH_MSG=null; AUTH_SCREEN='welcome'; if(DB) DB.setUser(null); renderWelcome(); }
     });
   }catch(e){
@@ -2526,6 +2585,7 @@ async function boot(){
   await initTimeline();
   await initActionplan();
   await initReport();
+  await initPlanoTerapeutico();
   await initLicense();
   await registrarListenerAuth();
   if(AUTH_SCREEN==='nova-senha'){ renderWelcome(); return; }
@@ -2536,6 +2596,7 @@ async function boot(){
       const {data} = await client.auth.getSession();
       DB.setUser(data&&data.session&&data.session.user&&data.session.user.id);
     }
+    if(PLANO_TERAPEUTICO) PLANO_PROF = await PLANO_TERAPEUTICO.listarPlanosProfissional();
     render();
     if(NOTIF && S) NOTIF.checkAndNotify(buildNotifStatus());
   } else renderWelcome();

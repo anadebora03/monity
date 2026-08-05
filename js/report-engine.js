@@ -213,9 +213,9 @@ function reportGerarResumo(d, ini, fim, profile) {
    }
    ============================================================ */
 function reportBuildPDF(ctx) {
-  const { profile: p, d, ini, fim, allWeighings, timeline, insightsPeriodo, acoesAlta, cabecalho, assinatura } = ctx;
+  const { profile: p, d, ini, fim, allWeighings, timeline, insightsPeriodo, acoesAlta, planoTerapeutico, cabecalho, assinatura } = ctx;
   const modulos = Object.assign(
-    { peso: true, aplicacoes: true, bioimpedancia: true, exames: true, medidas: true, sintomas: true, planoAcao: true, timeline: true, insights: true },
+    { peso: true, aplicacoes: true, bioimpedancia: true, exames: true, medidas: true, sintomas: true, planoAcao: true, timeline: true, insights: true, planoTerapeutico: true },
     ctx.modulos || {}
   );
   const na = d.na;
@@ -594,6 +594,15 @@ ${modulos.planoAcao && acoesAlta && acoesAlta.length ? `<div class="section">
       <div class="insight-t">${reportEsc(a.titulo)}</div>
       <p>${reportEsc(a.descricao)} <span style="color:var(--gray)">${reportEsc(a.motivo)}</span></p>
     </div>`).join('')}
+  </div>` : ''}
+
+${modulos.planoTerapeutico && planoTerapeutico ? `<div class="section">
+    <div class="section-head"><span class="dot"></span><span class="section-title">Plano terapêutico</span></div>
+    <div class="kv c3">
+      <div class="kc"><div class="kl">Planos ativos</div><div class="kv2">${planoTerapeutico.ativos}</div></div>
+      <div class="kc"><div class="kl">Planos concluídos</div><div class="kv2">${planoTerapeutico.concluidos}</div></div>
+      <div class="kc"><div class="kl">Taxa de adesão</div><div class="kv2">${planoTerapeutico.adesao != null ? planoTerapeutico.adesao + '%' : '—'}</div></div>
+    </div>
   </div>` : ''}
 
 <div class="insight">
