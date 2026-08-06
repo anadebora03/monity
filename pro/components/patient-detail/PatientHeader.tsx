@@ -44,7 +44,7 @@ export function PatientHeader({ p, workspaceId }: { p: PatientDetail; workspaceI
             <p className="mt-1 text-sm text-ink-soft dark:text-white/60">{info.length ? info.join(' · ') : p.email || 'Sem dados de perfil ainda.'}</p>
           </div>
         </div>
-        <div className="flex shrink-0 gap-2">
+        <div className="flex flex-wrap shrink-0 gap-2">
           <Button variant="secondary" size="sm" onClick={() => setRetornoAberto(true)}>
             <CalendarPlus size={15} strokeWidth={2} />
             Agendar retorno

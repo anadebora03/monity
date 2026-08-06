@@ -24,7 +24,7 @@ export function TimelineList({ eventos, limite }: { eventos: TimelineEvent[]; li
     return (
       <div className="flex flex-col items-center py-10 text-center">
         <MapPin size={22} strokeWidth={1.8} className="text-ink-faint dark:text-white/30" />
-        <p className="mt-2 text-sm text-ink-faint dark:text-white/40">Nenhum evento registrado ainda.</p>
+        <p className="mt-2 text-sm text-ink-faint dark:text-white/40">Este paciente ainda não tem nenhum evento registrado.</p>
       </div>
     );
   }

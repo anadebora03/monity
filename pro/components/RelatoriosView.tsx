@@ -26,18 +26,6 @@ export function RelatoriosView({ emissoes }: { emissoes: EmissaoRow[] }) {
     return emissoes.filter((e) => e.patientNome.toLowerCase().includes(q) || e.profissionalNome.toLowerCase().includes(q));
   }, [busca, emissoes]);
 
-  if (emissoes.length === 0) {
-    return (
-      <div className="mx-auto max-w-4xl px-6 py-10 sm:px-8">
-        <EmptyState
-          icon={FileText}
-          title="Nenhum relatório emitido ainda"
-          description="Assim que você gerar um relatório a partir do perfil de um paciente, ele aparece aqui."
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="mx-auto max-w-4xl px-6 py-10 sm:px-8">
       <h1 className="text-2xl font-bold tracking-[-0.02em] text-ink dark:text-white">Relatórios</h1>
@@ -45,20 +33,30 @@ export function RelatoriosView({ emissoes }: { emissoes: EmissaoRow[] }) {
         {emissoes.length} relatório{emissoes.length > 1 ? 's' : ''} emitido{emissoes.length > 1 ? 's' : ''}.
       </p>
 
-      <div className="relative mt-6 max-w-sm">
-        <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint dark:text-white/40" />
-        <input
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-          placeholder="Buscar por paciente ou profissional…"
-          className="w-full rounded-sm border border-slate-200 bg-white py-2.5 pl-10 pr-3.5 text-sm text-ink outline-none transition duration-150 ease-out placeholder:text-ink-faint focus:border-accent focus:ring-4 focus:ring-accent/10 dark:border-border-dark dark:bg-navy-soft dark:text-white dark:placeholder:text-white/30"
-        />
-      </div>
+      {emissoes.length === 0 ? (
+        <div className="mt-4">
+          <EmptyState
+            icon={FileText}
+            title="Nenhum relatório emitido ainda"
+            description="Assim que você gerar um relatório a partir do perfil de um paciente, ele aparece aqui."
+          />
+        </div>
+      ) : (
+        <>
+          <div className="relative mt-6 max-w-sm">
+            <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint dark:text-white/40" />
+            <input
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Buscar por paciente ou profissional…"
+              className="w-full rounded-sm border border-slate-200 bg-white py-2.5 pl-10 pr-3.5 text-sm text-ink outline-none transition duration-150 ease-out placeholder:text-ink-faint focus:border-accent focus:ring-4 focus:ring-accent/10 dark:border-border-dark dark:bg-navy-soft dark:text-white dark:placeholder:text-white/30"
+            />
+          </div>
 
-      <Card className="mt-4 animate-fade-in">
-        {filtrados.length === 0 ? (
-          <p className="py-6 text-center text-sm text-ink-faint dark:text-white/40">Nenhum relatório encontrado para &ldquo;{busca}&rdquo;.</p>
-        ) : (
+          <Card className="mt-4 animate-fade-in">
+            {filtrados.length === 0 ? (
+              <p className="py-6 text-center text-sm text-ink-faint dark:text-white/40">Nenhum relatório encontrado para &ldquo;{busca}&rdquo;.</p>
+            ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[520px] border-collapse text-sm">
               <thead>
@@ -91,8 +89,10 @@ export function RelatoriosView({ emissoes }: { emissoes: EmissaoRow[] }) {
               </tbody>
             </table>
           </div>
-        )}
-      </Card>
+            )}
+          </Card>
+        </>
+      )}
     </div>
   );
 }

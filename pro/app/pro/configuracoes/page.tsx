@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { Card } from '@/components/ui/Card';
 
+const STATUS_LABEL: Record<string, string> = { active: 'Ativo', inactive: 'Inativo', suspended: 'Suspenso' };
+
 /* Ainda sem edição nesta sprint (não pedida) — só um resumo somente
    leitura do que já foi criado no onboarding, confirmando pro
    profissional que os dados foram salvos corretamente. */
@@ -62,7 +64,7 @@ export default async function ConfiguracoesPage() {
           </div>
           <div className="flex justify-between">
             <dt className="text-ink-soft dark:text-white/60">Status</dt>
-            <dd className="font-medium capitalize text-ink dark:text-white">{workspace?.status ?? '—'}</dd>
+            <dd className="font-medium text-ink dark:text-white">{workspace?.status ? STATUS_LABEL[workspace.status] ?? workspace.status : '—'}</dd>
           </div>
         </dl>
       </Card>

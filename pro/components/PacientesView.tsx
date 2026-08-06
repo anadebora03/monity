@@ -31,18 +31,6 @@ export function PacientesView({ pacientes }: { pacientes: PacienteLista[] }) {
     return lista.filter((p) => p.nome.toLowerCase().includes(q) || p.email?.toLowerCase().includes(q));
   }, [busca, pacientes, filtroAtencao]);
 
-  if (pacientes.length === 0) {
-    return (
-      <div className="mx-auto max-w-4xl px-6 py-10 sm:px-8">
-        <EmptyState
-          icon={Users}
-          title="Seus pacientes aparecerão aqui"
-          description="Convide seu primeiro paciente para começar o acompanhamento."
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="mx-auto max-w-4xl px-6 py-10 sm:px-8">
       <h1 className="text-2xl font-bold tracking-[-0.02em] text-ink dark:text-white">Pacientes</h1>
@@ -50,28 +38,38 @@ export function PacientesView({ pacientes }: { pacientes: PacienteLista[] }) {
         {pacientes.length} paciente{pacientes.length > 1 ? 's' : ''} vinculado{pacientes.length > 1 ? 's' : ''}.
       </p>
 
-      {filtroAtencao && (
-        <button
-          onClick={() => router.push('/pro/pacientes')}
-          className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-warn/10 px-3 py-1.5 text-xs font-semibold text-warn transition-opacity hover:opacity-80 dark:bg-warn/15"
-        >
-          Filtrando: pacientes em atenção
-          <X size={13} strokeWidth={2.5} />
-        </button>
-      )}
+      {pacientes.length === 0 ? (
+        <div className="mt-4">
+          <EmptyState
+            icon={Users}
+            title="Seus pacientes aparecerão aqui"
+            description="Convide seu primeiro paciente para começar o acompanhamento."
+          />
+        </div>
+      ) : (
+        <>
+          {filtroAtencao && (
+            <button
+              onClick={() => router.push('/pro/pacientes')}
+              className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-warn/10 px-3 py-1.5 text-xs font-semibold text-warn transition-opacity hover:opacity-80 dark:bg-warn/15"
+            >
+              Filtrando: pacientes em atenção
+              <X size={13} strokeWidth={2.5} />
+            </button>
+          )}
 
-      <div className="relative mt-6 max-w-sm">
-        <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint dark:text-white/40" />
-        <input
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-          placeholder="Buscar por nome ou e-mail…"
-          className="w-full rounded-sm border border-slate-200 bg-white py-2.5 pl-10 pr-3.5 text-sm text-ink outline-none transition duration-150 ease-out placeholder:text-ink-faint focus:border-accent focus:ring-4 focus:ring-accent/10 dark:border-border-dark dark:bg-navy-soft dark:text-white dark:placeholder:text-white/30"
-        />
-      </div>
+          <div className="relative mt-6 max-w-sm">
+            <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint dark:text-white/40" />
+            <input
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Buscar por nome ou e-mail…"
+              className="w-full rounded-sm border border-slate-200 bg-white py-2.5 pl-10 pr-3.5 text-sm text-ink outline-none transition duration-150 ease-out placeholder:text-ink-faint focus:border-accent focus:ring-4 focus:ring-accent/10 dark:border-border-dark dark:bg-navy-soft dark:text-white dark:placeholder:text-white/30"
+            />
+          </div>
 
-      <Card className="mt-4 animate-fade-in">
-        {filtrados.length === 0 ? (
+          <Card className="mt-4 animate-fade-in">
+            {filtrados.length === 0 ? (
           <p className="py-6 text-center text-sm text-ink-faint dark:text-white/40">
             {busca ? <>Nenhum paciente encontrado para &ldquo;{busca}&rdquo;.</> : 'Nenhum paciente precisa de atenção agora.'}
           </p>
@@ -122,8 +120,10 @@ export function PacientesView({ pacientes }: { pacientes: PacienteLista[] }) {
               </tbody>
             </table>
           </div>
-        )}
-      </Card>
+            )}
+          </Card>
+        </>
+      )}
     </div>
   );
 }

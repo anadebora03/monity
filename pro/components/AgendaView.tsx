@@ -1,11 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, Search, CalendarX2 } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { StatCard } from '@/components/ui/StatCard';
-import { EmptyState } from '@/components/ui/EmptyState';
 import { CalendarMonth } from '@/components/agenda/CalendarMonth';
 import { DayTimeline } from '@/components/agenda/DayTimeline';
 import { AgendaSidebar } from '@/components/agenda/AgendaSidebar';
@@ -186,22 +185,6 @@ export function AgendaView({
                   {DIAS_SEMANA_LONGO[new Date(selecionado + 'T00:00:00').getDay()]}, {new Date(selecionado + 'T00:00:00').getDate()} de {MESES_LONGO[new Date(selecionado + 'T00:00:00').getMonth()]}
                 </p>
                 <DayTimeline compromissos={compromissosDoDia} />
-              </div>
-            )}
-
-            {compromissos.length === 0 && (
-              <div className="mt-2">
-                <EmptyState
-                  icon={CalendarX2}
-                  title="Sua agenda está livre"
-                  description="Aproveite para acompanhar seus pacientes."
-                  action={
-                    <Button onClick={() => setModalAberto(true)}>
-                      <Plus size={16} strokeWidth={2} />
-                      Novo compromisso
-                    </Button>
-                  }
-                />
               </div>
             )}
           </Card>

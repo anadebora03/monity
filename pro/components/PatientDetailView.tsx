@@ -55,7 +55,7 @@ export function PatientDetailView({ p, workspaceId, dadosClinicos }: { p: Patien
       </div>
 
       <div className="mt-6 overflow-x-auto">
-        <div className="flex w-max gap-1 border-b border-slate-100 dark:border-white/5 sm:w-auto sm:flex-wrap">
+        <div className="flex w-max gap-1 border-b border-slate-100 dark:border-white/5">
           {ABAS.map((t) => (
             <button
               key={t.id}
