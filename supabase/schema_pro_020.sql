@@ -1,5 +1,5 @@
 -- ============================================================
--- COMPASSO PRO · Migração incremental (Sprint 020 — Relatórios)
+-- MONITY PRO · Migração incremental (Sprint 020 — Relatórios)
 -- Rode no SQL Editor do mesmo projeto, DEPOIS de schema_pro.sql,
 -- schema_pro_016.sql, schema_pro_017.sql e schema_pro_018.sql.
 --

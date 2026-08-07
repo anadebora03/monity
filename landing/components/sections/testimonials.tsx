@@ -18,7 +18,7 @@ export function Testimonials() {
               <div className="flex h-full flex-col justify-between rounded-2xl border border-dashed border-border bg-bg-2 p-6">
                 <Quote className="h-6 w-6 text-accent/50" aria-hidden />
                 <p className="mt-4 text-sm leading-relaxed text-ink-3">
-                  Em breve você verá aqui histórias reais de pessoas que transformaram sua jornada com o Compasso.
+                  Em breve você verá aqui histórias reais de pessoas que transformaram sua jornada com o Monity.
                 </p>
                 <div className="mt-6 flex items-center gap-3">
                   <div className="h-9 w-9 rounded-full bg-accent-soft" aria-hidden />

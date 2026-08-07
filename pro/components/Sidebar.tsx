@@ -32,7 +32,7 @@ export function Sidebar({ nome, workspaceName }: { nome: string; workspaceName: 
       <div className="flex items-center gap-2.5 px-6 py-6">
         <Logo size={30} />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold tracking-[-0.01em] text-ink dark:text-white">Compasso Pro</p>
+          <p className="text-sm font-bold tracking-[-0.01em] text-ink dark:text-white">Monity Pro</p>
           <p className="truncate text-[11px] text-ink-faint dark:text-white/40">{workspaceName}</p>
         </div>
         <ThemeToggle />

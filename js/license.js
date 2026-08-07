@@ -1,5 +1,5 @@
 /* ============================================================
-   COMPASSO · License — motor único de licenciamento (Sprint P)
+   MONITY · License — motor único de licenciamento (Sprint P)
    Nenhuma tela verifica plano diretamente — tudo passa pelas 8
    funções expostas em LICENSE. Catálogo de recursos centralizado
    em FEATURES, nunca strings soltas.

@@ -1,8 +1,8 @@
 export const siteConfig = {
-  name: "Compasso",
+  name: "Monity",
   tagline: "Sua jornada com GLP-1 merece um acompanhamento inteligente.",
   description:
-    "O Compasso organiza aplicações, evolução do peso, exames, medidas corporais e insights em um único lugar, para que você acompanhe cada conquista com clareza.",
+    "O Monity organiza aplicações, evolução do peso, exames, medidas corporais e insights em um único lugar, para que você acompanhe cada conquista com clareza.",
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://compasso.app",
   ogImage: "/og-image.png",
   locale: "pt_BR",
@@ -13,7 +13,7 @@ export const siteConfig = {
 
 /**
  * URLs preenchidas depois: checkout Eduzz (produto ainda não publicado)
- * e o app do Compasso (domínio de produção a confirmar).
+ * e o app do Monity (domínio de produção a confirmar).
  */
 export const externalLinks = {
   checkoutUrl: process.env.NEXT_PUBLIC_CHECKOUT_URL ?? "#checkout-em-breve",

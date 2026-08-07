@@ -12,8 +12,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Compasso Pro',
-  description: 'Painel de acompanhamento clínico do Compasso — para nutricionistas e médicos.',
+  title: 'Monity Pro',
+  description: 'Painel de acompanhamento clínico do Monity — para nutricionistas e médicos.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

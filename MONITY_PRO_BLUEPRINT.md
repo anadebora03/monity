@@ -1,4 +1,4 @@
-# Compasso Pro — Blueprint de Arquitetura (Sprint 014.5)
+﻿# Monity Pro — Blueprint de Arquitetura (Sprint 014.5)
 
 > Documento de arquitetura. Nenhuma linha de código, migração ou componente foi criado nesta
 > sprint — só o mapa que as próximas sprints vão implementar em cima. Toda decisão abaixo tem
@@ -7,10 +7,10 @@
 
 ## Como este documento se encaixa no que já existe
 
-O Compasso Paciente é hoje um PWA zero-build (`app.js`/`style.css`/`sw.js`, sem framework, sem
+O Monity Paciente é hoje um PWA zero-build (`app.js`/`style.css`/`sw.js`, sem framework, sem
 bundler) com Supabase como backend (8 tabelas, todas `RLS` dono-only). Essa arquitetura foi uma
 escolha deliberada para o paciente: carregamento instantâneo, funciona offline, zero manutenção
-de build. O Compasso Pro é um produto genuinamente diferente — painel multi-paciente, tabelas,
+de build. O Monity Pro é um produto genuinamente diferente — painel multi-paciente, tabelas,
 filtros, uso majoritariamente em desktop — então este blueprint **não tenta encaixar o Pro
 dentro do mesmo `app.js`**. A decisão de arquitetura central (detalhada na seção "Decisões
 estruturais") é: **Pro é uma aplicação separada, mesmo backend Supabase.**
@@ -20,7 +20,7 @@ estruturais") é: **Pro é uma aplicação separada, mesmo backend Supabase.**
 ## 1. Mapa de Navegação
 
 ```
-Compasso Pro
+Monity Pro
 ├── Login / Cadastro                          (fora do painel — pré-autenticação)
 ├── Onboarding                                  (só no 1º acesso — ver Fluxo do Profissional)
 │   ├── Escolha de profissão
@@ -51,7 +51,7 @@ Compasso Pro
 
 **Decisão**: "Perfil do Paciente" é um único perfil com abas internas (mesmo padrão que
 `evolucaoView()` já usa hoje com `.seg-glass` pra Peso/IMC/Medidas), não 7 rotas profundas
-separadas — evita estado de navegação duplicado e é consistente com como o próprio Compasso
+separadas — evita estado de navegação duplicado e é consistente com como o próprio Monity
 Paciente organiza telas hoje.
 
 ---
@@ -137,7 +137,7 @@ flowchart TD
 Regras que valem a pena destacar:
 
 - **Profissional nunca escreve dado de saúde do paciente.** Nem registrar peso, nem editar uma
-  aplicação. O Compasso Pro é uma ferramenta de leitura e acompanhamento — quem registra
+  aplicação. O Monity Pro é uma ferramenta de leitura e acompanhamento — quem registra
   continua sendo sempre o paciente, no app dele. Isso evita todo um universo de conflito de
   sincronização (dois "donos" escrevendo no mesmo registro) que a Sprint J já documentou como
   fora de escopo até para dois dispositivos do mesmo paciente.
@@ -152,12 +152,12 @@ Regras que valem a pena destacar:
 
 ## 5. Estrutura das Rotas
 
-### Compasso Paciente (existente — não muda)
+### Monity Paciente (existente — não muda)
 Continua sendo uma SPA de rota única (`/`), navegação 100% em memória (`TAB`/`SUB`/`SHEET`).
 Nenhuma rota nova é necessária pro paciente além do que a Sprint 014 já adicionou ao onboarding
 (a pergunta de convite, que é mais um passo de `OB_*`, não uma URL nova).
 
-### Compasso Pro (novo)
+### Monity Pro (novo)
 Rotas reais (ver "Decisões estruturais" pra tecnologia por trás):
 
 ```
@@ -191,7 +191,7 @@ logicamente chamados "/app" e "/pro", cada um com seu próprio domínio/deploy. 
 mantendo a decisão já tomada e aprovada no blueprint original — e é importante registrar o
 porquê, porque a opção (a) parece mais simples à primeira vista e não é:
 
-- O Compasso Paciente **já está publicado e em uso** na raiz do próprio domínio (`/`), com PWA
+- O Monity Paciente **já está publicado e em uso** na raiz do próprio domínio (`/`), com PWA
   instalado por usuários reais (ícone salvo na tela de início, service worker com escopo `/`,
   URLs de redirecionamento de auth já configuradas no Supabase apontando pra essa raiz). Mover
   fisicamente esses arquivos pra dentro de um path `/app/` no mesmo projeto quebraria exatamente
@@ -203,11 +203,11 @@ porquê, porque a opção (a) parece mais simples à primeira vista e não é:
   produtos fossem servidos pelo mesmo build/roteador — o que contradiz a decisão já tomada de o
   Pro ser um projeto Next.js separado (ver "Decisões estruturais").
 
-**Decisão**: "/app" e "/pro" são dois **namespaces lógicos do produto Compasso**, não dois
+**Decisão**: "/app" e "/pro" são dois **namespaces lógicos do produto Monity**, não dois
 caminhos técnicos do mesmo servidor. Na prática:
-- **`/app`** = o Compasso Paciente, exatamente como já está publicado hoje (raiz do domínio
+- **`/app`** = o Monity Paciente, exatamente como já está publicado hoje (raiz do domínio
   atual, zero mudança de URL, zero risco pro PWA instalado).
-- **`/pro`** = o Compasso Pro, um projeto/domínio Vercel próprio (ver seção "Domínio", já
+- **`/pro`** = o Monity Pro, um projeto/domínio Vercel próprio (ver seção "Domínio", já
   decidido: começa em `*.vercel.app`, domínio próprio depois).
 
 Isso satisfaz o espírito do requisito (dois ambientes independentes, cada um com layout, menu,
@@ -281,7 +281,7 @@ qualquer jeito de acessar o dado (o app do paciente, o painel Pro quando existir
 direta à API do Supabase, uma função futura) passa pela **mesma** regra, automaticamente, sem
 precisar duplicar a checagem em cada frontend. Escrever uma camada de permissão em JavaScript
 agora seria (a) código morto — o painel Pro ainda não existe pra chamar essa camada — e (b) uma
-segunda fonte de verdade que poderia divergir da regra real do banco. Quando o Compasso Pro
+segunda fonte de verdade que poderia divergir da regra real do banco. Quando o Monity Pro
 (Sprint 016+) precisar decidir o que mostrar na tela, ele consulta o Supabase normalmente; se o
 profissional não tem permissão, a consulta simplesmente não devolve a linha — não existe um
 "if" de permissão pra esquecer de escrever.
@@ -290,7 +290,7 @@ profissional não tem permissão, a consulta simplesmente não devolve a linha �
 
 ## 7. Jornada do Usuário
 
-**Profissional, primeiro acesso:** chega numa landing própria do Compasso Pro → cadastro → duas
+**Profissional, primeiro acesso:** chega numa landing própria do Monity Pro → cadastro → duas
 perguntas rápidas (profissão, plano) → cria o workspace com o nome do consultório → cai num
 Dashboard vazio com uma chamada clara pra convidar o primeiro paciente → gera um código →
 compartilha por fora do produto (WhatsApp, verbalmente na consulta) → volta ao painel depois e
@@ -302,7 +302,7 @@ com sintoma persistente — os mesmos sinais que `js/insights.js` e `js/actionpl
 calculam pro paciente, reaproveitados aqui pra alimentar um resumo agregado) → abre o perfil de
 um paciente específico antes ou durante a consulta → gera um relatório em PDF se for o caso.
 
-**Paciente, já usando o Compasso, ganha um profissional:** numa consulta, o profissional mostra
+**Paciente, já usando o Monity, ganha um profissional:** numa consulta, o profissional mostra
 o código → paciente abre Configurações → uma opção nova "Vincular profissional" (mesmo padrão
 visual das seções já existentes em `configuracoesView()`) → digita o código → pronto, sem
 precisar recriar conta nem perder nenhum dado já registrado.
@@ -318,9 +318,9 @@ exatamente igual — o vínculo não muda uma vírgula da experiência de uso di
 | Sprint | Entrega | Depende de |
 |---|---|---|
 | **015** ✅ | Fundação da plataforma: schema Supabase do Pro (`professions`, `plans`, `professional_profiles`, `workspaces`, `patient_relationships`) + extensão de RLS nas 8 tabelas existentes + decisão de rotas `/app`/`/pro` | Este blueprint |
-| **016** | App Compasso Pro — esqueleto: login/cadastro, onboarding (profissão/plano/workspace), Dashboard vazio | 015 |
+| **016** | App Monity Pro — esqueleto: login/cadastro, onboarding (profissão/plano/workspace), Dashboard vazio | 015 |
 | **017** | Convites — gerar código, listar pendentes/aceitos/revogados, revogar | 015, 016 |
-| **018** | Compasso Paciente — pergunta de convite no onboarding + opção "Vincular profissional" em Configurações | 015, 017 |
+| **018** | Monity Paciente — pergunta de convite no onboarding + opção "Vincular profissional" em Configurações | 015, 017 |
 | **019** | Lista de Pacientes no Pro (busca, filtro, status) | 018 |
 | **020** | Perfil do Paciente no Pro — Evolução/Aplicações/Medidas/Bioimpedância/Exames (reaproveitando os componentes de gráfico e as leituras que já existem no Paciente, agora consumidos em modo leitura) | 019 |
 | **021** | Linha do Tempo + Relatórios no Pro (reaproveita `TIMELINE.gerar()` e `buildPDF()`) | 020 |
@@ -331,7 +331,7 @@ exatamente igual — o vínculo não muda uma vírgula da experiência de uso di
 
 ## Decisões estruturais
 
-**Compasso Pro é uma aplicação separada do Compasso Paciente, mesmo projeto Supabase.**
+**Monity Pro é uma aplicação separada do Monity Paciente, mesmo projeto Supabase.**
 Justificativa: o Paciente é zero-build de propósito (PWA leve, offline-first, mobile-first); o
 Pro é um painel denso (tabelas, múltiplos pacientes, filtros), uso majoritariamente desktop —
 forçar os dois no mesmo `app.js` misturaria dois paradigmas de UI que não têm por que
@@ -369,7 +369,7 @@ como evolução possível, não descartada — ver "Perguntas em aberto".
 
 ## Decisões confirmadas (2026-07-28)
 
-1. **Domínio do Compasso Pro** — começa com o domínio gerado automaticamente pela Vercel
+1. **Domínio do Monity Pro** — começa com o domínio gerado automaticamente pela Vercel
    (`*.vercel.app`); domínio próprio (ex. `pro.nutriease.com.br`) fica pra depois, é só apontar
    no painel da Vercel quando decidido — não exige mudança de código. Único ponto de atenção
    nesse momento futuro: atualizar a URL de redirecionamento do Supabase Auth pro domínio novo.

@@ -1,5 +1,5 @@
 /* ============================================================
-   COMPASSO · Auth — Supabase Auth
+   MONITY · Auth — Supabase Auth
    Cadastro, login, logout, recuperação de senha e sessão.
    Carregado como módulo; expõe as funções para o app.js (script
    clássico) via window.__authReady, no mesmo padrão da ponte

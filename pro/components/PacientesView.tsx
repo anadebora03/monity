@@ -35,7 +35,7 @@ export function PacientesView({ pacientes }: { pacientes: PacienteLista[] }) {
     <div className="mx-auto max-w-4xl px-6 py-10 sm:px-8">
       <h1 className="text-2xl font-bold tracking-[-0.02em] text-ink dark:text-white">Pacientes</h1>
       <p className="mt-1 text-sm text-ink-soft dark:text-white/60">
-        {pacientes.length} paciente{pacientes.length > 1 ? 's' : ''} vinculado{pacientes.length > 1 ? 's' : ''}.
+        {pacientes.length} paciente{pacientes.length !== 1 ? 's' : ''} vinculado{pacientes.length !== 1 ? 's' : ''}.
       </p>
 
       {pacientes.length === 0 ? (
@@ -87,12 +87,18 @@ export function PacientesView({ pacientes }: { pacientes: PacienteLista[] }) {
               <tbody>
                 {filtrados.map((p, i) => {
                   const dias = p.perfilCompleto ? diasDesde(p.ultimoRegistro) : null;
+                  const abrir = () => router.push(`/pro/pacientes/${p.id}`);
                   return (
                     <tr
                       key={p.id}
                       style={{ animationDelay: `${i * 40}ms` }}
-                      onClick={() => router.push(`/pro/pacientes/${p.id}`)}
-                      className="animate-fade-in cursor-pointer border-b border-slate-50 transition-colors duration-150 ease-out last:border-0 hover:bg-slate-50 dark:border-white/5 dark:hover:bg-white/5"
+                      onClick={abrir}
+                      tabIndex={0}
+                      role="link"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') abrir();
+                      }}
+                      className="animate-fade-in cursor-pointer border-b border-slate-50 transition-colors duration-150 ease-out last:border-0 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent dark:border-white/5 dark:hover:bg-white/5"
                     >
                       <td className="py-3 pr-4">
                         <div className="flex items-center gap-2.5">

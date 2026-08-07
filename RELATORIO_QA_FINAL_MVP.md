@@ -1,4 +1,4 @@
-# Relatório de QA Final — Compasso v1.0.0 (Inspeção de Aprovação para Publicação)
+﻿# Relatório de QA Final — Monity v1.0.0 (Inspeção de Aprovação para Publicação)
 
 **Tipo:** Auditoria manual read-only (QA Sênior + UX Reviewer + Product Designer). Nenhuma correção foi aplicada — este documento é exclusivamente diagnóstico.
 
@@ -375,7 +375,7 @@ O segundo achado de maior gravidade é visual e concentrado: a tela **Premium** 
 
 - **Tela:** Configurações
 - **Elemento:** Rodapé com versão
-- **Problema encontrado:** Nenhum problema — "Compasso v1.0.0" exibido com contraste correto (`var(--tx-3)` sobre fundo navy, confirmado por `getComputedStyle`).
+- **Problema encontrado:** Nenhum problema — "Monity v1.0.0" exibido com contraste correto (`var(--tx-3)` sobre fundo navy, confirmado por `getComputedStyle`).
 - **Impacto:** —
 - **Recomendação:** Nenhuma.
 - **Screenshot:** Não disponível nesta sessão.
@@ -399,7 +399,7 @@ O segundo achado de maior gravidade é visual e concentrado: a tela **Premium** 
 - **Tela:** N/A
 - **Elemento:** N/A
 - **Problema encontrado:** O app não tem modais centralizados (dialog no meio da tela) — todas as interações de sobreposição são bottom sheets ou o `confirm()` nativo do navegador (usado por `resetAll()`, `app.js:1238`). O uso de `confirm()` nativo para uma ação tão destrutiva ("apagar todos os dados") usa a caixa de diálogo do sistema operacional, com aparência totalmente fora do design system do app.
-- **Impacto:** 🟠 Médio — é a única confirmação de ação destrutiva do app inteiro e não tem nenhuma identidade visual do Compasso.
+- **Impacto:** 🟠 Médio — é a única confirmação de ação destrutiva do app inteiro e não tem nenhuma identidade visual do Monity.
 - **Recomendação:** Substituir por uma confirmação em sheet, consistente com o resto do app.
 - **Screenshot:** Não disponível nesta sessão.
 
@@ -448,7 +448,7 @@ O segundo achado de maior gravidade é visual e concentrado: a tela **Premium** 
 
 ## Conclusão
 
-O Compasso está, em geral, **bem mais maduro do que um MVP em fases costuma estar** nesta altura — a grande maioria das telas (13 de 15 telas cheias, todos os 8 sheets, os 4 fluxos de autenticação) está internamente consistente dentro do seu próprio tema, com empty states e mensagens bem escritas. Os problemas reais que esta auditoria encontrou são, em ordem de gravidade:
+O Monity está, em geral, **bem mais maduro do que um MVP em fases costuma estar** nesta altura — a grande maioria das telas (13 de 15 telas cheias, todos os 8 sheets, os 4 fluxos de autenticação) está internamente consistente dentro do seu próprio tema, com empty states e mensagens bem escritas. Os problemas reais que esta auditoria encontrou são, em ordem de gravidade:
 
 1. Ausência de edição/exclusão individual de registros (funcional, não visual) — **T1**.
 2. A tela Premium mistura classes legado/premium de forma visível — achado mais crítico de UI.

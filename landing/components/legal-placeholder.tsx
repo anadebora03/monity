@@ -17,7 +17,7 @@ export function LegalPlaceholder({ title }: { title: string }) {
           <h1 className="mt-6 text-3xl font-bold tracking-tight text-ink-1">{title}</h1>
           <p className="mt-4 text-ink-3">
             Este conteúdo está sendo preparado e será publicado em breve. Se precisar falar com a gente antes
-            disso, entre em contato pelo WhatsApp ou Instagram do Compasso.
+            disso, entre em contato pelo WhatsApp ou Instagram do Monity.
           </p>
         </Container>
       </main>

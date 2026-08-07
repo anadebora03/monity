@@ -1,6 +1,6 @@
 import type { Config } from 'tailwindcss';
 
-/* Tokens portados de style.css (Compasso Paciente), bloco
+/* Tokens portados de style.css (Monity App), bloco
    :root[data-theme="light"] (linhas ~71-87) — é o tema claro do
    próprio app, não uma paleta nova. O Pro herda exatamente esses
    valores porque "fundo totalmente branco" é literalmente a

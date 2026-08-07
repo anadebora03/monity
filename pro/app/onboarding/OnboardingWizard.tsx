@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { OnboardingProgress } from '@/components/OnboardingProgress';
+import { Logo } from '@/components/ui/Logo';
 import type { Profession } from '@/lib/types';
 import { completeOnboarding } from './actions';
 
@@ -30,10 +31,10 @@ export function OnboardingWizard({ professions, nome }: { professions: Professio
   if (step === 'boas-vindas') {
     return (
       <div className="text-center">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-accent text-xl font-bold text-white">
-          C
+        <div className="mx-auto">
+          <Logo size={56} />
         </div>
-        <h1 className="mt-6 text-2xl font-bold text-ink">Bem-vindo ao Compasso Pro</h1>
+        <h1 className="mt-6 text-2xl font-bold text-ink">Bem-vindo ao Monity Pro</h1>
         <p className="mx-auto mt-3 max-w-sm text-sm text-ink-soft">
           Vamos configurar rapidamente seu ambiente para que você possa começar a acompanhar seus pacientes.
         </p>
@@ -52,7 +53,7 @@ export function OnboardingWizard({ professions, nome }: { professions: Professio
       <div>
         <OnboardingProgress step={1} total={2} label="Sobre você" />
         <h1 className="text-xl font-bold text-ink">Qual é a sua profissão?</h1>
-        <p className="mt-1.5 text-sm text-ink-soft">Isso ajusta o Compasso Pro pra sua rotina clínica.</p>
+        <p className="mt-1.5 text-sm text-ink-soft">Isso ajusta o Monity Pro pra sua rotina clínica.</p>
 
         {error && <p className="mt-4 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600">{error}</p>}
 

@@ -1,5 +1,5 @@
 /* ============================================================
-   COMPASSO · Supabase — cliente e teste de conexão
+   MONITY · Supabase — cliente e teste de conexão
    Sprint Supabase 1 — apenas preparação de infraestrutura.
    Nenhuma tabela, login ou cadastro é criado aqui.
    Carregado via CDN (sem build step) — projeto continua estático.

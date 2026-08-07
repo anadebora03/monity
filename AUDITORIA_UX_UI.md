@@ -1,4 +1,4 @@
-# Auditoria UX/UI Premium — Compasso Pro
+﻿# Auditoria UX/UI Premium — Monity Pro
 
 **Data:** 2026-08-05
 **Escopo:** `pro/` (Next.js) — todas as telas navegáveis pelo profissional. Não inclui o app do paciente (`app.js`), que já passou por rodadas de polimento próprias (Sprints Q/R/RC2).
@@ -217,7 +217,7 @@ dia a dia. Documentado, não é achado de produto.
 
 ---
 
-## 5. "Se eu esconder o nome da página, ela continua parecendo parte do Compasso Pro?"
+## 5. "Se eu esconder o nome da página, ela continua parecendo parte do Monity Pro?"
 
 | Tela | Resposta |
 |---|---|
@@ -272,7 +272,7 @@ Nenhuma tela respondeu NÃO nesta rodada — os dois pontos que poderiam ter ger
 - 3 frases divergentes pro mesmo estado vazio + "Active" sem tradução.
 - Texto quebrando no meio da palavra dentro de botões em mobile.
 
-**💎 O que diferencia o Compasso Pro**
+**💎 O que diferencia o Monity Pro**
 - A disciplina de reaproveitar o mesmo motor de relatório entre o app do paciente e o Pro (Sprint 020) já elimina uma classe inteira de inconsistência visual que a maioria dos produtos SaaS carrega (dois PDFs diferentes pra paciente e profissional).
 - RLS + design system consistentes desde a arquitetura até o pixel — poucos produtos neste estágio têm as duas coisas alinhadas.
 
@@ -283,7 +283,7 @@ Justificativa: base tipográfica e de componentes já no nível "premium" antes 
 
 ## 8. Validação Final
 
-**1. O Compasso Pro transmite sensação de software premium?**
+**1. O Monity Pro transmite sensação de software premium?**
 **SIM.** Tipografia consistente, dark mode desenhado (não invertido), zero componente duplicado encontrado em toda a navegação — características que normalmente só aparecem em produtos que já passaram por uma rodada de polimento dedicada, que é exatamente o que esta sprint confirmou e reforçou.
 
 **2. Existe alguma tela que pareça feita em outro momento do projeto?**

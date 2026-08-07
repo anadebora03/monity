@@ -18,7 +18,7 @@ export function FinalCta() {
         </Reveal>
         <Reveal delay={0.1}>
           <Button href={externalLinks.checkoutUrl} size="lg" className="px-10 py-4 text-lg">
-            Quero experimentar o Compasso Premium
+            Quero experimentar o Monity Premium
           </Button>
         </Reveal>
       </Container>

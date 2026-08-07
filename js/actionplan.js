@@ -1,5 +1,5 @@
 /* ============================================================
-   COMPASSO · Action Plan — motor único do plano de ação (Sprint N)
+   MONITY · Action Plan — motor único do plano de ação (Sprint N)
    Responde uma pergunta que nenhum motor anterior responde: "o que
    merece atenção na próxima consulta?". Não recalcula regra nenhuma —
    lê e reclassifica o que js/insights.js e js/notifications.js já

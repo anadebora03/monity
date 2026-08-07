@@ -39,8 +39,8 @@ export function Navbar() {
     >
       <Container className="flex h-16 items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5" onClick={() => setOpen(false)}>
-          <Image src="/brand/logo-mark.png" alt="Compasso" width={32} height={32} className="rounded-[9px]" priority />
-          <span className="text-[17px] font-bold tracking-tight text-ink-1">Compasso</span>
+          <Image src="/brand/logo-mark.png" alt="Monity" width={32} height={32} className="rounded-[9px]" priority />
+          <span className="text-[17px] font-bold tracking-tight text-ink-1">Monity</span>
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex" aria-label="Navegação principal">

@@ -1,12 +1,12 @@
 -- ============================================================
--- COMPASSO PRO · Schema de dados (Sprint 015 — Fundação da Plataforma)
+-- MONITY PRO · Schema de dados (Sprint 015 — Fundação da Plataforma)
 -- Rode este arquivo inteiro no SQL Editor do painel do Supabase, no
 -- MESMO projeto do app do paciente (depois de supabase/schema.sql).
 -- Autossuficiente: não depende de nada além de schema.sql já ter
 -- rodado (para as 8 tabelas do paciente que a seção final estende).
 -- Idempotente: pode ser rodado mais de uma vez sem duplicar nada.
 --
--- Ver COMPASSO_PRO_BLUEPRINT.md pra arquitetura completa.
+-- Ver MONITY_PRO_BLUEPRINT.md pra arquitetura completa.
 --
 -- >>> Esta versão SUBSTITUI qualquer rodada anterior neste projeto <<<
 -- Duas rodadas anteriores já aconteceram neste projeto: a primeira

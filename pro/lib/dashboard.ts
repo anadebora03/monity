@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getPlanoStatsWorkspace, type StatsWorkspacePlano } from './plano-terapeutico-data';
+import { calcularPrioridadesWorkspace, type PrioridadePaciente } from './clinical-priority-engine';
 
 /* Camada de dados do Dashboard (Sprint 017). UMA consulta principal
    (workspace_patient_summary, ver supabase/schema_pro_017.sql) +
@@ -56,6 +57,10 @@ export type DashboardData = {
   pacientes: PacienteDashboard[];
   agendaHoje: { pacienteNome: string; tipo: string; hora: string | null; status: string }[];
   planoTerapeutico: StatsWorkspacePlano;
+  prioridades: {
+    pacientes: PrioridadePaciente[]; // nunca 'excelente' — só quem precisa de atenção
+    contagem: { excelentes: number; atencao: number; prioritarios: number; semAtualizacao: number };
+  };
 };
 
 export function todayISO(d = new Date()): string {
@@ -81,14 +86,26 @@ export function proximaAplicacao(diaAplicacao: number | null, ultimaAplicacaoDat
 }
 
 export async function getDashboardData(supabase: SupabaseClient, ownerId: string): Promise<DashboardData> {
-  const [{ data: rows }, { data: usage }, planoTerapeutico] = await Promise.all([
+  const [{ data: rows }, { data: usage }, planoTerapeutico, prioridadesTodas] = await Promise.all([
     supabase
       .from('workspace_patient_summary')
       .select('*')
       .order('ultimo_registro', { ascending: false }),
     supabase.from('workspace_patient_usage').select('patient_limit, patients_used').eq('owner_id', ownerId).maybeSingle(),
     getPlanoStatsWorkspace(supabase),
+    calcularPrioridadesWorkspace(supabase),
   ]);
+
+  const contagem = {
+    excelentes: prioridadesTodas.filter((p) => p.nivel === 'excelente').length,
+    atencao: prioridadesTodas.filter((p) => p.nivel === 'atencao').length,
+    prioritarios: prioridadesTodas.filter((p) => p.nivel === 'importante' || p.nivel === 'alta').length,
+    semAtualizacao: prioridadesTodas.filter((p) => p.fatores.some((f) => f.categoria === 'atualizacao')).length,
+  };
+  const prioridades = {
+    pacientes: prioridadesTodas.filter((p) => p.nivel !== 'excelente').sort((a, b) => b.score - a.score),
+    contagem,
+  };
 
   const summary = (rows ?? []) as PatientSummaryRow[];
   const hoje = todayISO();
@@ -108,6 +125,7 @@ export async function getDashboardData(supabase: SupabaseClient, ownerId: string
       pacientes: [],
       agendaHoje: [],
       planoTerapeutico,
+      prioridades,
     };
   }
 
@@ -221,5 +239,6 @@ export async function getDashboardData(supabase: SupabaseClient, ownerId: string
     pacientes,
     agendaHoje,
     planoTerapeutico,
+    prioridades,
   };
 }

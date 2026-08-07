@@ -1,8 +1,8 @@
-# Compasso Pro
+# Monity Pro
 
 Painel web para profissionais de saúde (nutricionistas, médicos) acompanharem pacientes do
-Compasso. Projeto separado do app do paciente (raiz do repositório) — mesmo backend Supabase,
-frontend próprio. Ver `../COMPASSO_PRO_BLUEPRINT.md` para a arquitetura completa.
+Monity. Projeto separado do app do paciente (raiz do repositório) — mesmo backend Supabase,
+frontend próprio. Ver `../MONITY_PRO_BLUEPRINT.md` para a arquitetura completa.
 
 ## Rodar localmente
 

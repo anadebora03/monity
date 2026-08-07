@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/client';
 
-/* Portado de js/auth.js (Compasso Paciente) — mesmas mensagens, mesmo
+/* Portado de js/auth.js (Monity App) — mesmas mensagens, mesmo
    mapeamento de erro, pra quem usa os dois ambientes ver sempre a
    mesma linguagem. "Reutilizar a arquitetura existente" (pedido
    explícito da Sprint 016) não dá pra ser um import literal (runtime

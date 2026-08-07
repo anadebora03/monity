@@ -1,5 +1,5 @@
 -- ============================================================
--- COMPASSO PRO · Migração incremental (Sprint 022 — Plano Terapêutico)
+-- MONITY PRO · Migração incremental (Sprint 022 — Plano Terapêutico)
 -- Rode no SQL Editor do mesmo projeto, DEPOIS de schema_pro_021.sql.
 --
 -- `planos_terapeuticos` é uma entidade NOVA, independente do motor

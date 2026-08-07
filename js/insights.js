@@ -1,5 +1,5 @@
 /* ============================================================
-   COMPASSO · Insights — motor único de análise (Sprint L)
+   MONITY · Insights — motor único de análise (Sprint L)
    Nenhuma tela analisa dado nenhum: tudo passa por gerar(ctx)
    aqui. app.js monta o contexto (reaproveitando coletaDados() já
    existente) e só renderiza a lista pronta.

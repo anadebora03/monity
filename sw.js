@@ -1,5 +1,5 @@
 /* ============================================================
-   COMPASSO · Service Worker
+   MONITY · Service Worker
    App shell caching + funcionamento offline basico.
    Sem dependencias externas, sem build step.
    ============================================================ */
@@ -7,8 +7,8 @@
 // Bump a cada release que altera qualquer arquivo do APP_SHELL abaixo — é o
 // único jeito de o cache stale-while-revalidate parar de servir a versão
 // antiga no primeiro carregamento após o deploy (ver RC2: "Minha Jornada").
-const CACHE_VERSION = 'build-20260729a';
-const CACHE_NAME = `compasso-cache-${CACHE_VERSION}`;
+const CACHE_VERSION = 'build-20260807b-monity-brand';
+const CACHE_NAME = `monity-cache-${CACHE_VERSION}`;
 
 const APP_SHELL = [
   '/',
@@ -91,7 +91,7 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Clique numa notificação (Sprint K): foca uma aba já aberta do Compasso,
+// Clique numa notificação (Sprint K): foca uma aba já aberta do Monity,
 // ou abre uma nova se não houver nenhuma.
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();

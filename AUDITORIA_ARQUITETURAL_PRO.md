@@ -1,4 +1,4 @@
-# Auditoria Arquitetural Executiva — Compasso Pro
+﻿# Auditoria Arquitetural Executiva — Monity Pro
 
 **Data:** 2026-08-05
 **Escopo:** `pro/` (Next.js 15 + Supabase), Sprints 015–022. Não cobre o app do paciente (`app.js`/`js/*`) exceto nos pontos onde ele é fonte de dado ou é tocado pela sincronização.
@@ -12,7 +12,7 @@
 flowchart TB
     subgraph Cliente
         PWA["App do Paciente\n(app.js, estático, zero-build)"]
-        WebPro["Compasso Pro\n(navegador do profissional)"]
+        WebPro["Monity Pro\n(navegador do profissional)"]
     end
 
     subgraph Vercel["Vercel (pro/)"]
@@ -88,7 +88,7 @@ Evidência: `pro/scripts/sync-shared.js:18-33`, `pro/package.json:6,8` (`predev`
 flowchart LR
     Foto["input[type=file]\n(app.js:1026)"] --> Base64["base64 em memória\n(weighings.foto, só local)"]
     Base64 -.->|"NUNCA acontece"| Supa[(Supabase Storage)]
-    Base64 -.->|"NUNCA acontece"| ProApp["Compasso Pro"]
+    Base64 -.->|"NUNCA acontece"| ProApp["Monity Pro"]
 ```
 Este é o único fluxo do diagrama que **não existe de fato** — ver achado F5. Documentado aqui porque o brief pediu explicitamente o fluxo de upload, não porque ele funcione.
 
@@ -309,7 +309,7 @@ Sprint 023, quando retomada).
 Arquivo: pro/components/ThemeScript.tsx:7-15
 Achado: dark mode decidido antes da hidratação via script inline,
 evitando flash de tema errado — mesmo princípio já usado no app do
-paciente, chave de localStorage própria (compasso_pro_theme, não
+paciente, chave de localStorage própria (Monity_pro_theme, não
 compartilha com o app do paciente porque são origens diferentes).
 Impacto: —
 Risco: — (achado positivo)
@@ -434,10 +434,10 @@ atenção antes de uma escala 10-100× maior.
 
 ## 6. Validação Final
 
-**1. Se o Compasso Pro tiver 10× mais usuários, a arquitetura atual continuará adequada?**
+**1. Se o Monity Pro tiver 10× mais usuários, a arquitetura atual continuará adequada?**
 **SIM.** O modelo é RLS-first: cada query já filtra no Postgres por `workspace_id`/`patient_id`, não há lógica de autorização duplicada no app que precisaria escalar separadamente. As duas views agregadas (`workspace_patient_summary`, `workspace_patient_usage`) evitam N+1 por paciente. Em 10× a base atual (que hoje é de 1 paciente vinculado em produção, confirmado nesta sessão), o volume continua pequeno o bastante pra não expor o achado de paginação ausente (seção 2, Banco) nem o índice faltando em `applications`. O único ponto que já sentiria diferença é o middleware fazendo uma query extra por navegação (`middleware.ts:66-70`) — mas isso escala com número de REQUISIÇÕES simultâneas, não com número de usuários cadastrados, e é o tipo de carga que a infraestrutura serverless da Vercel + Postgres gerenciado do Supabase já foi desenhada pra absorver.
 
-**2. Se o Compasso Pro tiver 100× mais pacientes ativos, quais módulos serão os primeiros gargalos?**
+**2. Se o Monity Pro tiver 100× mais pacientes ativos, quais módulos serão os primeiros gargalos?**
 Nesta ordem, com evidência:
 1. **Dashboard e `/pro/pacientes`** (`pro/lib/dashboard.ts:84-91`, `pro/lib/patients.ts:24-27`) — buscam todos os pacientes ativos do workspace sem `.limit()`. É o gargalo mais direto e mais fácil de prever: um único profissional com centenas de pacientes carregaria uma lista inteira a cada acesso.
 2. **`workspace_patient_summary`** (`supabase/schema_pro_017.sql:17-60`) — 4 LATERAL JOINs por linha de paciente. Bem indexado hoje, mas o custo cresce linearmente com pacientes por workspace, e é consultado tanto pelo Dashboard quanto pela lista.
@@ -452,7 +452,7 @@ Sim. O modelo de permissões do profissional foi construído **aditivamente** em
 **5. Qual o grau de confiança para levar esta arquitetura para produção?**
 **91%.** Justificativa: a base de segurança e RLS é sólida e já está em produção real (deploy confirmado, login real testado nesta sessão). Os 9% de desconto vêm de três fatores concretos, não de dúvida genérica: (a) zero observabilidade de erro em produção — um problema como o do `planos_terapeuticos` desta própria sessão só foi pego porque alguém testou manualmente; (b) zero teste automatizado — toda garantia de não-regressão é humana; (c) a funcionalidade de upload de fotos está ausente sem que isso apareça em lugar nenhum da UI como "em breve" — é uma lacuna silenciosa. Nenhum desses três é um defeito de arquitetura — são lacunas operacionais que reduzem a confiança sem reduzir a nota de segurança/organização.
 
-**6. O Compasso Pro já possui arquitetura de nível comercial?**
+**6. O Monity Pro já possui arquitetura de nível comercial?**
 **Parcialmente.** O núcleo (autenticação, autorização via RLS, modelo de dados multi-tenant por workspace, separação clara entre camada de dados e apresentação) está no nível de um produto comercial real — não encontrei atalho ou gambiarra nas 8 policies de segurança revisadas, nem no fluxo de convite/vínculo. O que falta pra "nível comercial" completo não é arquitetura, é operação: zero observabilidade, zero teste automatizado, zero billing real implementado (`js/license.js` é um motor propositalmente desligado), e uma funcionalidade visível ao usuário final (fotos) que nunca chega ao profissional. Comercialmente pronto no núcleo, não pronto nas bordas operacionais.
 
 **7. A arquitetura atual está preparada para suportar os próximos cinco anos de evolução do produto?**
@@ -467,7 +467,7 @@ flowchart LR
     Hoje["Hoje\nSprints 015-022\nnúcleo comercial sólido"] --> V2["Versão 2\nfechar as lacunas desta auditoria:\nobservabilidade, testes,\nupload de fotos, paginação"]
     V2 --> V3["Versão 3\nbilling real\n(hoje: license.js é stub)\nlimite de plano aplicado de fato"]
     V3 --> Ent["Enterprise\nmúltiplos profissionais\npor workspace/clínica\n(hoje: 1 owner = 1 workspace)"]
-    Ent --> WL["White Label\nabstrair marca Compasso\ndo design system\n(hoje: nome/cor cravados em várias telas)"]
+    Ent --> WL["White Label\nabstrair marca Monity\ndo design system\n(hoje: nome/cor cravados em várias telas)"]
     WL --> MP["Marketplace\ncamada de descoberta\nprofissional <-> paciente\n(hoje: só convite direto por código)"]
 ```
 
@@ -477,7 +477,7 @@ flowchart LR
 
 **V3 → Enterprise**: hoje o modelo é rigidamente "1 `owner_id` = 1 `workspace`" (`supabase/schema_pro.sql:99-109`). Suportar uma clínica com múltiplos profissionais no mesmo workspace exige um novo conceito de "membro do workspace" com papéis — mudança de schema real, não só mais uma tabela aditiva.
 
-**Enterprise → White Label**: o nome "Compasso"/paleta azul aparecem cravados em várias telas (não levantado exaustivamente nesta auditoria — citando como direção, não como achado fechado). Exigiria um sistema de tema por tenant, não só claro/escuro.
+**Enterprise → White Label**: o nome "Monity"/paleta azul aparecem cravados em várias telas (não levantado exaustivamente nesta auditoria — citando como direção, não como achado fechado). Exigiria um sistema de tema por tenant, não só claro/escuro.
 
 **White Label → Marketplace**: hoje a única forma de um paciente se vincular a um profissional é receber um código de convite diretamente dele (`pro/lib/invites.ts`). Um marketplace exigiria descoberta pública (busca, perfil público de profissional) — um domínio de produto novo, não uma extensão do que existe.
 

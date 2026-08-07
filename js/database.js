@@ -1,5 +1,5 @@
 /* ============================================================
-   COMPASSO · Database — sincronização offline-first (Sprint J)
+   MONITY · Database — sincronização offline-first (Sprint J)
    Camada isolada entre o localStorage (S, em app.js) e o Supabase.
    app.js nunca fala com o Supabase diretamente: só chama os hooks
    expostos aqui via window.__databaseReady, no mesmo padrão de

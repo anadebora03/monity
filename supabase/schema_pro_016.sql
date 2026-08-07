@@ -1,5 +1,5 @@
 -- ============================================================
--- COMPASSO PRO · Migração incremental (Sprint 016)
+-- MONITY PRO · Migração incremental (Sprint 016)
 -- Rode no SQL Editor do mesmo projeto, DEPOIS de schema_pro.sql.
 -- Diferente de schema_pro.sql, este arquivo NÃO derruba nada — a
 -- partir desta sprint, professional_profiles/workspaces podem ter

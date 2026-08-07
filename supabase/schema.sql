@@ -1,5 +1,5 @@
 -- ============================================================
--- COMPASSO · Schema de dados (Sprint J — Sincronização Inteligente)
+-- MONITY · Schema de dados (Sprint J — Sincronização Inteligente)
 -- Rode este arquivo inteiro no SQL Editor do painel do Supabase
 -- (Project → SQL Editor → New query → colar e rodar).
 -- Idempotente: pode ser rodado mais de uma vez sem duplicar nada.

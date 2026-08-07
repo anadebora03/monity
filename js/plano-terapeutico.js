@@ -1,5 +1,5 @@
 /* ============================================================
-   COMPASSO · Plano Terapêutico do profissional (Sprint 022)
+   MONITY · Plano Terapêutico do profissional (Sprint 022)
    Diferente de todo o resto do app (local-first, sincroniza depois),
    esta é a PRIMEIRA fonte de dado que o app do paciente lê direto
    do Supabase, sem passar por `S`/js/database.js — porque não é

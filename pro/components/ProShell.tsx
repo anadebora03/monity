@@ -35,7 +35,7 @@ export function ProShell({
           <Menu size={20} strokeWidth={2} />
         </button>
         <Logo size={26} />
-        <span className="text-sm font-bold tracking-[-0.01em] text-ink dark:text-white">Compasso Pro</span>
+        <span className="text-sm font-bold tracking-[-0.01em] text-ink dark:text-white">Monity Pro</span>
       </div>
 
       {open && (

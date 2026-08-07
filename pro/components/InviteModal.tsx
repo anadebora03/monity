@@ -54,7 +54,7 @@ export function InviteModal({ open, onClose }: { open: boolean; onClose: () => v
     if (!link) return;
     if (navigator.share) {
       try {
-        await navigator.share({ title: 'Convite Compasso', text: 'Você foi convidado para o Compasso.', url: link });
+        await navigator.share({ title: 'Convite Monity', text: 'Você foi convidado para o Monity.', url: link });
       } catch {
         // usuário cancelou o compartilhamento — nada a fazer
       }
@@ -64,8 +64,8 @@ export function InviteModal({ open, onClose }: { open: boolean; onClose: () => v
   }
 
   const mailtoHref = link
-    ? `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent('Convite para o Compasso')}&body=${encodeURIComponent(
-        `Olá${nome ? ' ' + nome : ''},\n\nVocê foi convidado(a) para acompanhar sua evolução pelo Compasso. Acesse o link abaixo para criar sua conta:\n\n${link}`
+    ? `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent('Convite para o Monity')}&body=${encodeURIComponent(
+        `Olá${nome ? ' ' + nome : ''},\n\nVocê foi convidado(a) para acompanhar sua evolução pelo Monity. Acesse o link abaixo para criar sua conta:\n\n${link}`
       )}`
     : '#';
 

@@ -1,5 +1,5 @@
 /* ============================================================
-   COMPASSO · Timeline — motor único da linha do tempo (Sprint M)
+   MONITY · Timeline — motor único da linha do tempo (Sprint M)
    Nenhuma tela monta evento nenhum: tudo passa por gerar(ctx)
    aqui. app.js monta o contexto (buildTimelineContext(), reaproveitando
    S diretamente + achievements() + INSIGHTS.listarHistorico()) e só

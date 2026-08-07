@@ -1,5 +1,5 @@
 -- ============================================================
--- COMPASSO PRO · Migração incremental (Sprint 017 — Dashboard)
+-- MONITY PRO · Migração incremental (Sprint 017 — Dashboard)
 -- Rode no SQL Editor do mesmo projeto, DEPOIS de schema_pro.sql e
 -- schema_pro_016.sql. Só ADITIVO (uma view nova) — nada é derrubado.
 --

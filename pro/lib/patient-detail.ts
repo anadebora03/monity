@@ -43,10 +43,29 @@ export type RegistroSintomas = { date: string; sintomas: string[]; humor: number
 export type TimelineEvent = {
   id: string;
   data: string;
-  categoria: 'tratamento' | 'aplicacao' | 'dose' | 'peso' | 'bioimpedancia' | 'exame' | 'sintomas' | 'conquista';
+  categoria:
+    | 'cadastro'
+    | 'convite'
+    | 'tratamento'
+    | 'aplicacao'
+    | 'dose'
+    | 'medicamento'
+    | 'peso'
+    | 'bioimpedancia'
+    | 'exame'
+    | 'sintomas'
+    | 'conquista'
+    | 'plano'
+    | 'consulta'
+    | 'retorno'
+    | 'relatorio';
   titulo: string;
   descricao: string;
+  destaque?: boolean;
+  insight?: string; // frase curta derivada dos próprios dados (ex: "melhor resultado das últimas 6 pesagens") — nunca IA, só comparação com o histórico já carregado
 };
+
+export type CompromissoPaciente = { id: string; data: string; hora: string | null; tipo: string; status: string; observacoes: string | null };
 
 export type PlanoItem = { titulo: string; descricao: string; prioridade: 'alta' | 'media' };
 
@@ -80,6 +99,7 @@ export type PatientDetail = {
   bio: BioRegistro[];
   exames: Exame[];
   sintomas: RegistroSintomas[];
+  compromissos: CompromissoPaciente[];
 
   timeline: TimelineEvent[];
   insights: string[];
@@ -115,6 +135,7 @@ function vazio(patientId: string): PatientDetail {
     bio: [],
     exames: [],
     sintomas: [],
+    compromissos: [],
     timeline: [],
     insights: [],
     planoAcao: [],
@@ -131,15 +152,27 @@ export async function getPatientDetail(supabase: SupabaseClient, patientId: stri
 
   if (!rel) return vazio(patientId);
 
-  const [{ data: profile }, { data: weighings }, { data: applications }, { data: bio }, { data: exams }, { data: dailyLogs }] =
-    await Promise.all([
-      supabase.from('profiles').select('nome, medicamento, dose_atual, unidade, dia_aplicacao, data_inicio, peso_inicial, peso_meta, altura').eq('id', patientId).maybeSingle(),
-      supabase.from('weighings').select('date, peso, cintura, quadril, abdomen, coxa, braco').eq('user_id', patientId).order('date', { ascending: true }),
-      supabase.from('applications').select('date, dose, medicamento, local, obs').eq('user_id', patientId).order('date', { ascending: true }),
-      supabase.from('bioimpedance').select('date, gordura, massa_magra, musculo, agua, visceral, tmb').eq('user_id', patientId).order('date', { ascending: true }),
-      supabase.from('exams').select('date, tipo, valor').eq('user_id', patientId).order('date', { ascending: true }),
-      supabase.from('daily_logs').select('date, sintomas, humor').eq('user_id', patientId).order('date', { ascending: true }),
-    ]);
+  const [
+    { data: profile },
+    { data: weighings },
+    { data: applications },
+    { data: bio },
+    { data: exams },
+    { data: dailyLogs },
+    { data: compromissosRows },
+    { data: planosRows },
+    { data: relatoriosRows },
+  ] = await Promise.all([
+    supabase.from('profiles').select('nome, medicamento, dose_atual, unidade, dia_aplicacao, data_inicio, peso_inicial, peso_meta, altura, created_at').eq('id', patientId).maybeSingle(),
+    supabase.from('weighings').select('date, peso, cintura, quadril, abdomen, coxa, braco').eq('user_id', patientId).order('date', { ascending: true }),
+    supabase.from('applications').select('date, dose, medicamento, local, obs').eq('user_id', patientId).order('date', { ascending: true }),
+    supabase.from('bioimpedance').select('date, gordura, massa_magra, musculo, agua, visceral, tmb').eq('user_id', patientId).order('date', { ascending: true }),
+    supabase.from('exams').select('date, tipo, valor').eq('user_id', patientId).order('date', { ascending: true }),
+    supabase.from('daily_logs').select('date, sintomas, humor').eq('user_id', patientId).order('date', { ascending: true }),
+    supabase.from('compromissos').select('id, data, hora, tipo, status, observacoes').eq('patient_id', patientId).order('data', { ascending: true }),
+    supabase.from('planos_terapeuticos').select('id, titulo, categoria, status, created_at, concluido_em').eq('patient_id', patientId).order('created_at', { ascending: true }),
+    supabase.from('report_emissions').select('id, periodo_ini, periodo_fim, created_at').eq('patient_id', patientId).order('created_at', { ascending: true }),
+  ]);
 
   const perfilCompleto = !!profile;
   const nome = profile?.nome || rel.nome_convidado || rel.patient_email || 'Paciente';
@@ -168,6 +201,14 @@ export async function getPatientDetail(supabase: SupabaseClient, patientId: stri
   const sintomas: RegistroSintomas[] = (dailyLogs ?? [])
     .map((l) => ({ date: l.date as string, sintomas: ((l.sintomas as string[] | null) ?? []).filter((s) => s !== 'Sem sintomas'), humor: l.humor as number | null }))
     .filter((l) => l.sintomas.length > 0);
+  const compromissos: CompromissoPaciente[] = (compromissosRows ?? []).map((c) => ({
+    id: c.id,
+    data: c.data,
+    hora: c.hora,
+    tipo: c.tipo || 'Compromisso',
+    status: c.status,
+    observacoes: c.observacoes,
+  }));
 
   const pesoInicial: number | null = profile?.peso_inicial ?? null;
   const pesoMeta: number | null = profile?.peso_meta ?? null;
@@ -204,8 +245,20 @@ export async function getPatientDetail(supabase: SupabaseClient, patientId: stri
   }
   const statusClinico: PatientDetail['statusClinico'] = !perfilCompleto ? 'sem_dado' : motivos.length ? 'atencao' : pesoAtual != null ? 'evolucao' : 'sem_dado';
 
-  // ---------- timeline (mais recente primeiro — leitura clínica, não narrativa) ----------
+  // ---------- timeline clínica (Sprint 028 — narrativa completa, mais recente primeiro) ----------
+  // Reúne TODO evento clínico já existente na plataforma numa única
+  // sequência — nenhuma tabela nova, nenhum recálculo: cada bloco
+  // abaixo só traduz um registro já buscado acima pro formato comum
+  // TimelineEvent. "destaque" marca os eventos que o brief pediu
+  // para ganhar peso visual (marco de 5/10 kg, troca de dose/
+  // medicamento, relatório gerado).
   const timeline: TimelineEvent[] = [];
+  if (rel.accepted_at) {
+    timeline.push({ id: 'convite', data: rel.accepted_at.slice(0, 10), categoria: 'convite', titulo: 'Convite aceito', descricao: 'Vínculo com o profissional confirmado.' });
+  }
+  if (profile?.created_at) {
+    timeline.push({ id: 'cadastro', data: profile.created_at.slice(0, 10), categoria: 'cadastro', titulo: 'Cadastro concluído', descricao: 'Paciente completou o próprio cadastro no app.' });
+  }
   if (dataInicio) {
     timeline.push({
       id: 'tratamento:inicio',
@@ -213,43 +266,91 @@ export async function getPatientDetail(supabase: SupabaseClient, patientId: stri
       categoria: 'tratamento',
       titulo: 'Início do tratamento',
       descricao: [pesoInicial != null ? `Peso inicial ${nf(pesoInicial)} kg` : null, profile?.medicamento].filter(Boolean).join(' · ') || 'Marco zero registrado.',
+      destaque: true,
     });
   }
   aplicacoes.forEach((a, i) => {
-    const anterior = [...aplicacoes.slice(0, i)].reverse().find((p) => p.medicamento === a.medicamento);
-    const mudouDose = anterior && anterior.dose !== a.dose;
-    timeline.push({
-      id: `aplicacao:${a.date}`,
-      data: a.date,
-      categoria: mudouDose ? 'dose' : 'aplicacao',
-      titulo: mudouDose ? 'Mudança de dose' : 'Aplicação realizada',
-      descricao: mudouDose
-        ? `${a.medicamento || 'Medicamento'}: ${anterior!.dose || '—'} → ${a.dose || '—'}`
-        : [a.medicamento, a.dose, a.local].filter(Boolean).join(' · ') || 'Aplicação registrada.',
-    });
+    if (i === 0) {
+      timeline.push({
+        id: `aplicacao:${a.date}`,
+        data: a.date,
+        categoria: 'aplicacao',
+        titulo: 'Primeira aplicação registrada',
+        descricao: [a.medicamento, a.dose, a.local].filter(Boolean).join(' · ') || 'Aplicação registrada.',
+      });
+      return;
+    }
+    const anterior = aplicacoes[i - 1];
+    if (a.medicamento && anterior.medicamento !== a.medicamento) {
+      timeline.push({
+        id: `medicamento:${a.date}`,
+        data: a.date,
+        categoria: 'medicamento',
+        titulo: 'Troca de medicamento',
+        descricao: `${anterior.medicamento || '—'} → ${a.medicamento}`,
+        destaque: true,
+      });
+    } else if (anterior.dose !== a.dose) {
+      timeline.push({
+        id: `aplicacao:${a.date}`,
+        data: a.date,
+        categoria: 'dose',
+        titulo: 'Mudança de dose',
+        descricao: `${a.medicamento || 'Medicamento'}: ${anterior.dose || '—'} → ${a.dose || '—'}`,
+        destaque: true,
+      });
+    } else {
+      timeline.push({
+        id: `aplicacao:${a.date}`,
+        data: a.date,
+        categoria: 'aplicacao',
+        titulo: 'Aplicação realizada',
+        descricao: [a.medicamento, a.dose, a.local].filter(Boolean).join(' · ') || 'Aplicação registrada.',
+      });
+    }
   });
+  // janela móvel dos últimos deltas de peso — permite dizer "melhor
+  // resultado das últimas N pesagens" sem guardar nada, só olhando
+  // pra trás no próprio array já carregado (mesmo princípio "nunca
+  // IA, só comparação com o histórico" pedido no feedback).
+  const deltasPeso: number[] = [];
   pesagens.forEach((p, i) => {
     const anterior = i > 0 ? pesagens[i - 1] : null;
     const delta = anterior ? +(p.peso - anterior.peso).toFixed(1) : null;
     const medidas = [p.cintura ? `cintura ${nf(p.cintura)} cm` : null, p.quadril ? `quadril ${nf(p.quadril)} cm` : null].filter(Boolean).join(', ');
+    let insight: string | undefined;
+    if (delta != null) {
+      const janela = deltasPeso.slice(-6);
+      if (janela.length >= 3 && delta < Math.min(...janela)) insight = `Melhor resultado das últimas ${janela.length} pesagens.`;
+      deltasPeso.push(delta);
+    }
     timeline.push({
       id: `peso:${p.date}`,
       data: p.date,
       categoria: 'peso',
-      titulo: 'Peso registrado',
-      descricao: `${nf(p.peso)} kg${delta != null ? ` (${delta >= 0 ? '+' : ''}${nf(delta)} kg)` : ''}${medidas ? ' · ' + medidas : ''}`,
+      titulo: 'Nova pesagem',
+      descricao: `${nf(p.peso)} kg${delta != null ? ` (${delta >= 0 ? '+' : ''}${nf(delta)} kg desde a última pesagem)` : ''}${medidas ? ' · ' + medidas : ''}`,
+      insight,
     });
   });
-  bioRegs.forEach((b) => {
+  bioRegs.forEach((b, i) => {
+    const anterior = i > 0 ? bioRegs[i - 1] : null;
     const partes = [
-      b.gordura != null ? `${nf(b.gordura)}% gordura` : null,
+      b.gordura != null ? `${nf(b.gordura)}% gordura${anterior?.gordura != null ? (b.gordura < anterior.gordura ? ' (reduziu)' : b.gordura > anterior.gordura ? ' (aumentou)' : '') : ''}` : null,
       b.massaMagraPct != null ? `${nf(b.massaMagraPct)}% massa muscular` : null,
-      b.musculo != null ? `${nf(b.musculo)} kg músculo` : null,
     ].filter(Boolean);
-    timeline.push({ id: `bio:${b.date}`, data: b.date, categoria: 'bioimpedancia', titulo: 'Bioimpedância registrada', descricao: partes.join(' · ') || 'Registro de composição corporal.' });
+    const massaPreservada = b.massaMagraPct != null && anterior?.massaMagraPct != null && b.massaMagraPct >= anterior.massaMagraPct;
+    timeline.push({
+      id: `bio:${b.date}`,
+      data: b.date,
+      categoria: 'bioimpedancia',
+      titulo: 'Bioimpedância realizada',
+      descricao: partes.join(' · ') || 'Registro de composição corporal.',
+      insight: massaPreservada ? 'Massa muscular preservada.' : undefined,
+    });
   });
   exames.forEach((e) => {
-    timeline.push({ id: `exame:${e.date}:${e.tipo}`, data: e.date, categoria: 'exame', titulo: 'Exame registrado', descricao: [e.tipo, e.valor].filter(Boolean).join(': ') || 'Exame laboratorial.' });
+    timeline.push({ id: `exame:${e.date}:${e.tipo}`, data: e.date, categoria: 'exame', titulo: 'Novo exame', descricao: [e.tipo, e.valor].filter(Boolean).join(': ') || 'Exame laboratorial.' });
   });
   sintomas.forEach((s) => {
     timeline.push({ id: `sintomas:${s.date}`, data: s.date, categoria: 'sintomas', titulo: 'Sintomas registrados', descricao: s.sintomas.join(', ') });
@@ -257,9 +358,48 @@ export async function getPatientDetail(supabase: SupabaseClient, patientId: stri
   if (pesoInicial != null) {
     [1, 5, 10].forEach((marco) => {
       const atingiu = pesagens.find((p) => +(pesoInicial - p.peso).toFixed(1) >= marco);
-      if (atingiu) timeline.push({ id: `conquista:${marco}`, data: atingiu.date, categoria: 'conquista', titulo: `Meta de ${marco} kg atingida`, descricao: `${marco} kg perdidos desde o início do tratamento.` });
+      if (atingiu) {
+        timeline.push({
+          id: `conquista:${marco}`,
+          data: atingiu.date,
+          categoria: 'conquista',
+          titulo: `Meta de ${marco} kg atingida`,
+          descricao: `${marco} kg perdidos desde o início do tratamento.`,
+          destaque: marco >= 5,
+        });
+      }
     });
   }
+  (planosRows ?? []).forEach((pl) => {
+    const concluido = pl.status === 'concluido' && pl.concluido_em;
+    timeline.push({
+      id: `plano:${pl.id}`,
+      data: (concluido ? pl.concluido_em! : pl.created_at).slice(0, 10),
+      categoria: 'plano',
+      titulo: concluido ? 'Orientação concluída' : 'Plano terapêutico atualizado',
+      descricao: `${pl.titulo} (${pl.categoria})`,
+    });
+  });
+  (compromissosRows ?? []).forEach((c) => {
+    if (c.status === 'cancelado' || c.data > hoje) return; // futuro fica só na aba Agenda — ainda não é história
+    timeline.push({
+      id: `compromisso:${c.id}`,
+      data: c.data,
+      categoria: c.tipo === 'Retorno' ? 'retorno' : 'consulta',
+      titulo: c.tipo || 'Compromisso',
+      descricao: [c.observacoes, c.hora ? `Horário: ${c.hora.slice(0, 5)}` : null].filter(Boolean).join(' · ') || 'Compromisso registrado.',
+    });
+  });
+  (relatoriosRows ?? []).forEach((r) => {
+    timeline.push({
+      id: `relatorio:${r.id}`,
+      data: r.created_at.slice(0, 10),
+      categoria: 'relatorio',
+      titulo: 'Relatório gerado',
+      descricao: `Período de ${fmtBR(r.periodo_ini)} a ${fmtBR(r.periodo_fim)}.`,
+      destaque: true,
+    });
+  });
   timeline.sort((a, b) => (a.data < b.data ? 1 : a.data > b.data ? -1 : 0));
 
   // ---------- insights clínicos ----------
@@ -336,6 +476,7 @@ export async function getPatientDetail(supabase: SupabaseClient, patientId: stri
     bio: bioRegs,
     exames,
     sintomas,
+    compromissos,
     timeline,
     insights,
     planoAcao,

@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   },
   description: siteConfig.description,
   keywords: [
-    "Compasso",
+    "Monity",
     "GLP-1",
     "acompanhamento de tratamento",
     "evolução de peso",

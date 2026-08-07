@@ -62,9 +62,9 @@ export function InviteFlow({ code, preview, jaAutenticado }: { code: string; pre
         <Card className="text-center">
           <CheckCircle2 size={32} className="mx-auto text-good" />
           <p className="mt-3 text-sm font-semibold text-ink dark:text-white">Este convite já foi aceito</p>
-          <p className="mt-1 text-sm text-ink-soft dark:text-white/60">O vínculo já está ativo — é só usar o app do Compasso normalmente.</p>
+          <p className="mt-1 text-sm text-ink-soft dark:text-white/60">O vínculo já está ativo — é só usar o app do Monity normalmente.</p>
           <a href={APP_PACIENTE_URL} className="mt-4 inline-block">
-            <Button>Abrir o Compasso</Button>
+            <Button>Abrir o Monity</Button>
           </a>
         </Card>
       </Shell>
@@ -135,10 +135,10 @@ export function InviteFlow({ code, preview, jaAutenticado }: { code: string; pre
           <CheckCircle2 size={32} className="mx-auto text-good" />
           <p className="mt-3 text-sm font-semibold text-ink dark:text-white">Vínculo criado com sucesso</p>
           <p className="mt-1 text-sm text-ink-soft dark:text-white/60">
-            {profissional} já pode acompanhar sua evolução. Agora é só usar o Compasso normalmente.
+            {profissional} já pode acompanhar sua evolução. Agora é só usar o Monity normalmente.
           </p>
           <a href={APP_PACIENTE_URL} className="mt-4 inline-block">
-            <Button>Abrir o Compasso</Button>
+            <Button>Abrir o Monity</Button>
           </a>
         </Card>
       ) : step === 'declined' ? (
@@ -155,7 +155,7 @@ export function InviteFlow({ code, preview, jaAutenticado }: { code: string; pre
             <p className="text-xs text-ink-faint dark:text-white/40">{preview.profissao_nome}</p>
           )}
           <p className="mt-4 text-sm text-ink-soft dark:text-white/60">
-            {profissional} deseja acompanhar sua evolução no Compasso.
+            {profissional} deseja acompanhar sua evolução no Monity.
           </p>
           {error && <p className="mt-3 rounded-sm bg-danger/5 px-3 py-2 text-sm text-danger">{error}</p>}
           <div className="mt-5 flex gap-2.5">
@@ -182,7 +182,7 @@ export function InviteFlow({ code, preview, jaAutenticado }: { code: string; pre
               <Stethoscope size={18} strokeWidth={2} />
             </div>
             <div>
-              <p className="text-sm font-semibold text-ink dark:text-white">Você foi convidado(a) para o Compasso</p>
+              <p className="text-sm font-semibold text-ink dark:text-white">Você foi convidado(a) para o Monity</p>
               <p className="text-xs text-ink-faint dark:text-white/40">
                 Profissional responsável: {profissional}
                 {preview.profissao_nome ? ` · ${preview.profissao_nome}` : ''}

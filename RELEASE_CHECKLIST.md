@@ -1,13 +1,13 @@
-# Compasso — Release Checklist (v1.0.0 Release Candidate)
+﻿# Monity — Release Checklist (v1.0.0 Release Candidate)
 
-Checklist de publicação do Compasso, montado ao final do Sprint R a partir de três auditorias
+Checklist de publicação do Monity, montado ao final do Sprint R a partir de três auditorias
 completas do código (tipografia/copy, ícones/espaçamento/bordas/sombras, assets/animações/
 manifest/versionamento) mais verificação manual dos pontos de segurança e versionamento.
 
 ## Identidade
 
 - [x] Nome do app consistente em todo lugar: `manifest.json` (`name`/`short_name`), `index.html`
-      (`<title>`, `apple-mobile-web-app-title`), rodapé de Configurações — todos "Compasso".
+      (`<title>`, `apple-mobile-web-app-title`), rodapé de Configurações — todos "Monity".
 - [x] Ícones: 192×192 e 512×512, cada um com par `maskable` (`icons/icon-*.png`,
       `icons/icon-*-maskable.png`), mais `favicon-32`/`favicon-16`/`favicon.ico`/
       `apple-touch-icon.png`. Nenhum ícone órfão ou duplicado encontrado na auditoria.
@@ -29,7 +29,7 @@ manifest/versionamento) mais verificação manual dos pontos de segurança e ver
 - [x] Build limpa: projeto é 100% zero-build por design (arquivo único `app.js` + módulos ES em
       `js/`, sem bundler/transpiler) — confirmado, não é uma lacuna.
 - [x] Versionamento: `sw.js` (`CACHE_VERSION`), `manifest.json` (`version`) e um comentário de
-      release no topo de `app.js` agora identificam consistentemente "Compasso v1.0.0". Antes
+      release no topo de `app.js` agora identificam consistentemente "Monity v1.0.0". Antes
       desta sprint não existia nenhum identificador de versão real no projeto.
 
 ## Segurança

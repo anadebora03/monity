@@ -1,18 +1,25 @@
-import { Flag, Syringe, RefreshCw, Scale, Activity, FlaskConical, Frown, Trophy, MapPin } from 'lucide-react';
+import { Flag, Syringe, RefreshCw, Pill, Scale, Activity, FlaskConical, Frown, Trophy, ClipboardList, Stethoscope, CalendarCheck, FileText, UserPlus, UserCheck, MapPin } from 'lucide-react';
 import type { TimelineEvent } from '@/lib/patient-detail';
 
-const ICON: Record<TimelineEvent['categoria'], typeof Flag> = {
+export const TIMELINE_ICON: Record<TimelineEvent['categoria'], typeof Flag> = {
+  cadastro: UserPlus,
+  convite: UserCheck,
   tratamento: Flag,
   aplicacao: Syringe,
   dose: RefreshCw,
+  medicamento: Pill,
   peso: Scale,
   bioimpedancia: Activity,
   exame: FlaskConical,
   sintomas: Frown,
   conquista: Trophy,
+  plano: ClipboardList,
+  consulta: Stethoscope,
+  retorno: CalendarCheck,
+  relatorio: FileText,
 };
 
-function fmtBR(iso: string) {
+export function fmtBR(iso: string) {
   const [y, m, d] = iso.split('-');
   return `${d}/${m}/${y}`;
 }
@@ -32,7 +39,7 @@ export function TimelineList({ eventos, limite }: { eventos: TimelineEvent[]; li
   return (
     <ol className="relative space-y-0">
       {lista.map((ev, i) => {
-        const Icon = ICON[ev.categoria];
+        const Icon = TIMELINE_ICON[ev.categoria];
         const isLast = i === lista.length - 1;
         return (
           <li key={ev.id} className="relative flex animate-fade-in gap-3.5 pb-6 last:pb-0" style={{ animationDelay: `${i * 30}ms` }}>

@@ -7,16 +7,16 @@ import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Avatar } from '@/components/ui/Avatar';
 import { StatCard } from '@/components/ui/StatCard';
 
-/* Vitrine do design system do Compasso Pro — não faz parte da
+/* Vitrine do design system do Monity Pro — não faz parte da
    navegação do produto, é referência viva pra conferir se a
    identidade visual (azul oficial, gradientes de luz, tipografia
    Inter, cards de raio 20-24px) está correta ANTES de aplicar nas
-   telas reais. Ver COMPASSO_PRO_BLUEPRINT.md. */
+   telas reais. Ver MONITY_PRO_BLUEPRINT.md. */
 export default function KitPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-12 px-8 py-12">
       <header>
-        <h1 className="text-2xl font-bold tracking-[-0.02em] text-ink">Compasso Pro — UI Kit</h1>
+        <h1 className="text-2xl font-bold tracking-[-0.02em] text-ink">Monity Pro — UI Kit</h1>
         <p className="mt-1 text-sm text-ink-soft">
           Mesma identidade visual do app do paciente: azul oficial, gradientes de luz, tipografia Inter.
         </p>

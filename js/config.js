@@ -1,5 +1,5 @@
 /* ============================================================
-   COMPASSO · Config — configurações públicas do projeto
+   MONITY · Config — configurações públicas do projeto
    Único lugar responsável por guardar SUPABASE_URL e
    SUPABASE_ANON_KEY. Substitua pelos dados do seu projeto.
    ============================================================ */

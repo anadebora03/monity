@@ -1,5 +1,5 @@
 -- ============================================================
--- COMPASSO PRO · Migração incremental (Sprint 018 — Convites)
+-- MONITY PRO · Migração incremental (Sprint 018 — Convites)
 -- Rode no SQL Editor do mesmo projeto, DEPOIS de schema_pro.sql,
 -- schema_pro_016.sql e schema_pro_017.sql.
 --

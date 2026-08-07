@@ -54,7 +54,7 @@ export default function CadastroPage() {
       <AuthShell title="Confirme seu e-mail" subtitle="Falta pouco.">
         <p className="text-sm text-ink-soft">
           Mandamos um link de confirmação para <b className="text-ink">{email}</b>. Abra o e-mail e clique no
-          link pra continuar seu cadastro no Compasso Pro.
+          link pra continuar seu cadastro no Monity Pro.
         </p>
       </AuthShell>
     );

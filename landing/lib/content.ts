@@ -155,9 +155,9 @@ export const howItWorksSteps = [
 
 export const faqItems = [
   {
-    question: "O Compasso substitui acompanhamento médico?",
+    question: "O Monity substitui acompanhamento médico?",
     answer:
-      "Não. O Compasso é uma ferramenta de organização e acompanhamento da sua jornada — ele não substitui consultas, prescrições ou orientações do seu médico ou nutricionista.",
+      "Não. O Monity é uma ferramenta de organização e acompanhamento da sua jornada — ele não substitui consultas, prescrições ou orientações do seu médico ou nutricionista.",
   },
   {
     question: "Como funciona a assinatura?",
@@ -177,6 +177,6 @@ export const faqItems = [
   {
     question: "Posso usar no celular?",
     answer:
-      "Sim. O Compasso funciona direto do navegador do celular, sem precisar instalar nada de uma loja de aplicativos.",
+      "Sim. O Monity funciona direto do navegador do celular, sem precisar instalar nada de uma loja de aplicativos.",
   },
 ];

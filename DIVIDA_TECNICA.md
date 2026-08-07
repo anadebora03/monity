@@ -1,4 +1,4 @@
-# Dívida Técnica — Compasso Pro
+﻿# Dívida Técnica — Monity Pro
 
 Cada item aqui corresponde a um achado com evidência real, detalhado em
 [AUDITORIA_ARQUITETURAL_PRO.md](AUDITORIA_ARQUITETURAL_PRO.md). Nada

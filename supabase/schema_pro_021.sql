@@ -1,5 +1,5 @@
 -- ============================================================
--- COMPASSO PRO · Migração incremental (Sprint 021 — Agenda Inteligente)
+-- MONITY PRO · Migração incremental (Sprint 021 — Agenda Inteligente)
 -- Rode no SQL Editor do mesmo projeto, DEPOIS de schema_pro_020.sql.
 --
 -- `compromissos` é uma entidade NOVA e independente de `patient_

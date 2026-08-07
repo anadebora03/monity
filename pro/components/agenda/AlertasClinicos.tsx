@@ -18,18 +18,26 @@ export function AlertasClinicos({ alertas }: { alertas: AlertaClinico[] }) {
         </div>
       ) : (
         <ul className="space-y-2.5">
-          {alertas.map((a, i) => (
+          {alertas.map((a, i) => {
+            const abrir = () => a.patientId && router.push(`/pro/pacientes/${a.patientId}`);
+            return (
             <li
               key={i}
-              onClick={() => a.patientId && router.push(`/pro/pacientes/${a.patientId}`)}
-              className={`flex items-start gap-2.5 rounded-sm border p-2.5 text-[13px] ${a.patientId ? 'cursor-pointer' : ''} ${
+              onClick={abrir}
+              tabIndex={a.patientId ? 0 : undefined}
+              role={a.patientId ? 'link' : undefined}
+              onKeyDown={(e) => {
+                if (a.patientId && e.key === 'Enter') abrir();
+              }}
+              className={`flex items-start gap-2.5 rounded-sm border p-2.5 text-[13px] ${a.patientId ? 'cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent' : ''} ${
                 a.tom === 'danger' ? 'border-danger/15 bg-danger/5 dark:border-danger/20 dark:bg-danger/10' : 'border-warn/15 bg-warn/5 dark:border-warn/20 dark:bg-warn/10'
               }`}
             >
               <AlertTriangle size={14} strokeWidth={2} className={`mt-0.5 shrink-0 ${a.tom === 'danger' ? 'text-danger' : 'text-warn'}`} />
               <span className="text-ink dark:text-white">{a.texto}</span>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
     </Card>

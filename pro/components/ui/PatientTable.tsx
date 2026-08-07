@@ -35,12 +35,18 @@ export function PatientTable({ pacientes }: { pacientes: PacienteDashboard[] }) 
         <tbody>
           {pacientes.map((p, i) => {
             const st = STATUS_LABEL[p.status];
+            const abrir = () => router.push(`/pro/pacientes/${p.id}`);
             return (
               <tr
                 key={p.id}
                 style={{ animationDelay: `${i * 40}ms` }}
-                onClick={() => router.push(`/pro/pacientes/${p.id}`)}
-                className="animate-fade-in cursor-pointer border-b border-slate-50 transition-colors duration-150 ease-out last:border-0 hover:bg-slate-50 dark:border-white/5 dark:hover:bg-white/5"
+                onClick={abrir}
+                tabIndex={0}
+                role="link"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') abrir();
+                }}
+                className="animate-fade-in cursor-pointer border-b border-slate-50 transition-colors duration-150 ease-out last:border-0 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent dark:border-white/5 dark:hover:bg-white/5"
               >
                 <td className="py-3 pr-4">
                   <div className="flex items-center gap-2.5">

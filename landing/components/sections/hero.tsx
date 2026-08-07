@@ -30,7 +30,7 @@ export function Hero() {
         >
           <div className="flex items-center gap-2.5 rounded-full border border-border bg-bg-2 py-1.5 pl-1.5 pr-4">
             <Image src="/brand/logo-mark.png" alt="" width={26} height={26} className="rounded-[7px]" aria-hidden />
-            <span className="text-xs font-semibold tracking-wide text-ink-2">Compasso</span>
+            <span className="text-xs font-semibold tracking-wide text-ink-2">Monity</span>
           </div>
 
           <h1 className="text-4xl font-bold leading-[1.08] tracking-tight text-ink-1 sm:text-5xl lg:text-[3.4rem]">
@@ -38,7 +38,7 @@ export function Hero() {
           </h1>
 
           <p className="max-w-lg text-lg leading-relaxed text-ink-2">
-            O Compasso organiza aplicações, evolução do peso, exames, medidas corporais e insights em um único
+            O Monity organiza aplicações, evolução do peso, exames, medidas corporais e insights em um único
             lugar, para que você acompanhe cada conquista com clareza.
           </p>
 

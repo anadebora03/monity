@@ -104,7 +104,7 @@ export function PlanoTerapeuticoTab({ patientId, workspaceId, planoAutomatico }:
       </div>
 
       <Card className="animate-fade-in">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-[.09em] text-ink-faint dark:text-white/40">Plano criado pelo Compasso</p>
+        <p className="mb-3 text-xs font-semibold uppercase tracking-[.09em] text-ink-faint dark:text-white/40">Plano criado pelo Monity</p>
         {planoAutomatico.length === 0 ? (
           <p className="text-sm text-ink-faint dark:text-white/40">Nada pedindo atenção agora, segundo os dados sincronizados.</p>
         ) : (

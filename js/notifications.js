@@ -1,5 +1,5 @@
 /* ============================================================
-   COMPASSO · Notifications — lembretes inteligentes (Sprint K)
+   MONITY · Notifications — lembretes inteligentes (Sprint K)
    Camada única de decisão: nenhuma tela cria notificação
    diretamente, todas passam por checkAndNotify() aqui.
 

@@ -1,5 +1,5 @@
 /* ============================================================
-   COMPASSO · Companheiro de tratamento GLP-1 (protótipo NutriEase)
+   MONITY · Companheiro de tratamento GLP-1 (protótipo NutriEase)
    v1.0.0 — Release Candidate
    Arquivo único, sem dependências externas.
    Persistência: localStorage com fallback em memória.
@@ -70,7 +70,7 @@ function sortedWeigh(){return[...S.weighings].sort((a,b)=>a.date<b.date?-1:1);}
 function currentWeight(){const w=sortedWeigh();return w.length?w[w.length-1].peso:S.profile.pesoInicial;}
 function lost(){return +(S.profile.pesoInicial-currentWeight()).toFixed(1);}
 function lostPct(){return S.profile.pesoInicial?(lost()/S.profile.pesoInicial*100):0;}
-/* Indicador 2 (Sprint 014) — evolução registrada NO COMPASSO: 1º peso
+/* Indicador 2 (Sprint 014) — evolução registrada NO MONITY: 1º peso
    registrado no app → peso atual. Independente do Indicador 1 (lost(), que
    usa o Marco Zero p.pesoInicial/p.dataInicio) — nunca misturar os dois. */
 function firstTrackedWeight(){const w=sortedWeigh();return w.length?w[0].peso:null;}
@@ -147,7 +147,7 @@ function seedExample(){
     pen:{capacidadeMg:60,doseMg:7.5,usadas:5},created:startISO};
 }
 /* firstWeighing (opcional) — Sprint 014, Marco Zero: quando a pessoa já
-   iniciou o tratamento antes de conhecer o Compasso, o 1º registro real do
+   iniciou o tratamento antes de conhecer o Monity, o 1º registro real do
    app é o peso ATUAL informado (hoje), não o peso do início do tratamento
    (p.pesoInicial/p.dataInicio seguem só como referência histórica pros
    indicadores — nunca viram um registro de pesagem). */
@@ -202,7 +202,7 @@ function topView(){
   return `<div class="top">
     <div class="brand">
       ${logoSVG(22)}
-      <div><h1>Compasso</h1><div class="greet">${greeting()}, ${esc(S.profile.nome)}</div></div>
+      <div><h1>Monity</h1><div class="greet">${greeting()}, ${esc(S.profile.nome)}</div></div>
     </div>
     <button class="badge-ico" onclick="toggleTheme()" aria-label="Alternar tema">${icon(THEME==='dark'?'sun':'moon')}</button>
   </div>`;
@@ -307,7 +307,7 @@ function topInsight(){
     return `<div class="gcard tight" style="margin-top:14px">
       <div class="eyebrow2">Acompanhamento</div>
       <div class="insight2"><span class="ico">${icon('steth')}</span>
-      <p>Mantenha seu acompanhamento médico e nutricional em dia — são eles que conduzem seu tratamento com segurança.<span class="care">O Compasso complementa, não substitui, a sua equipe de saúde.</span></p></div>
+      <p>Mantenha seu acompanhamento médico e nutricional em dia — são eles que conduzem seu tratamento com segurança.<span class="care">O Monity complementa, não substitui, a sua equipe de saúde.</span></p></div>
       <button class="btn-pill block ghost btn-sm" onclick="go('mais','insights')">Ver insights</button></div>`;
   }
   const i=ins[0];
@@ -420,7 +420,7 @@ function evPesoTab(w){
   </div>
   <div class="gcard tight">${lineChartPremium(w.map(x=>({x:x.date,y:x.peso})),S.profile.pesoMeta)}</div>
   ${tl!=null&&w.length>=2?`<div class="gcard tight">
-    <div class="eyebrow2">Evolução registrada no Compasso</div>
+    <div class="eyebrow2">Evolução registrada no Monity</div>
     <p style="font-size:13px;color:var(--tx-2);margin:6px 0 0;line-height:1.5">Do seu 1º registro no app (${nf(firstTrackedWeight())} kg, ${fmtBRy(w[0].date)}) até hoje: <b style="color:var(--tx-1)">${tl>=0?'−':'+'}${nf(Math.abs(tl))} kg</b></p>
   </div>`:''}
   ${evEvolutionCard()}`;
@@ -655,7 +655,7 @@ function careCard(){
       <div class="badge-glow">${icon('steth')}</div>
       <div style="flex:1">
         <div style="font-weight:800;font-size:14px;margin-bottom:5px;color:var(--tx-1)">Seu tratamento é conduzido por profissionais</div>
-        <p style="margin:0;font-size:13px;line-height:1.55;color:var(--tx-2)">O Compasso organiza seus registros, mas quem conduz o tratamento é a sua equipe de saúde. O <b>acompanhamento médico</b> é essencial para avaliar dose, prescrição e segurança; o <b>acompanhamento nutricional</b> garante proteína adequada, preservação da massa magra e o manejo dos sintomas ao longo do uso do análogo de GLP-1.</p>
+        <p style="margin:0;font-size:13px;line-height:1.55;color:var(--tx-2)">O Monity organiza seus registros, mas quem conduz o tratamento é a sua equipe de saúde. O <b>acompanhamento médico</b> é essencial para avaliar dose, prescrição e segurança; o <b>acompanhamento nutricional</b> garante proteína adequada, preservação da massa magra e o manejo dos sintomas ao longo do uso do análogo de GLP-1.</p>
         ${line?`<p style="margin:11px 0 0;font-size:12.5px;font-weight:700;color:var(--tx-1)">${line}</p>`:''}
         <button class="btn-pill btn-sm ghost" style="margin-top:12px" onclick="openSheet('compromisso')">${icon('cal',true)} Agendar consulta</button>
       </div>
@@ -690,7 +690,7 @@ function planoAcaoView(){
   return `<div class="scr-title" style="margin-bottom:6px">Plano de ação</div>
   <div class="scr-sub">O que revisar na próxima consulta, a partir dos seus registros. Não substitui a orientação do seu médico e nutricionista.</div>
 
-  <div class="eyebrow2" style="margin:16px 0 6px">Plano criado pelo Compasso</div>
+  <div class="eyebrow2" style="margin:16px 0 6px">Plano criado pelo Monity</div>
   <div class="gcard mt14"><div class="hist-list">
     ${acoes.length?acoes.map(a=>`<div class="hist-item">
       <div class="badge-glow ${PLANO_TONE[a.prioridade]}">${icon('flag')}</div>
@@ -744,7 +744,7 @@ const FEATURE_BENEFICIO={
   backup:{titulo:'Backup em nuvem', desc:'Seus dados protegidos e sincronizados entre dispositivos.'},
 };
 function premiumGateView(feature){
-  const b=FEATURE_BENEFICIO[feature]||{titulo:'Recurso Premium', desc:'Esse recurso faz parte do plano Premium do Compasso.'};
+  const b=FEATURE_BENEFICIO[feature]||{titulo:'Recurso Premium', desc:'Esse recurso faz parte do plano Premium do Monity.'};
   return `<div class="gcard center" style="padding:32px 20px">
     <div class="badge-glow amber" style="margin:0 auto 14px">${icon('medal')}</div>
     <div class="scr-title" style="font-size:19px;margin-bottom:6px">${esc(b.titulo)}</div>
@@ -764,7 +764,7 @@ function premiumView(){
   return `
   <div class="ap-head ap-head-screen">
     <button type="button" class="ap-back" onclick="go('mais')" aria-label="Voltar">${CAL_CHEV_L}</button>
-    <span class="ap-title">Compasso Premium</span>
+    <span class="ap-title">Monity Premium</span>
     <span class="ap-head-spacer"></span>
   </div>
   <p class="scr-sub">Desbloqueie todo o potencial do seu acompanhamento.</p>
@@ -1061,7 +1061,7 @@ function sheetBody(id){
       <button class="btn-pill block" onclick="saveBio()">Salvar bioimpedância</button>`;
   }
   if(id==='perfil') return configuracoesView();
-  if(id==='confirmarReset') return `<h2>Excluir todos os dados?</h2><p class="sub">Isso exclui permanentemente tudo o que você registrou no Compasso — pesagens, aplicações, diário, exames e configurações. Esta ação não pode ser desfeita.</p>
+  if(id==='confirmarReset') return `<h2>Excluir todos os dados?</h2><p class="sub">Isso exclui permanentemente tudo o que você registrou no Monity — pesagens, aplicações, diário, exames e configurações. Esta ação não pode ser desfeita.</p>
     <button class="btn-pill block ghost neutral" onclick="openSheet('perfil')">Cancelar</button>
     <button class="btn-pill block danger" style="margin-top:10px" onclick="confirmarResetAll()">Excluir tudo</button>`;
   return '';
@@ -1166,7 +1166,7 @@ function cfgNotificacoesSecao(){
   const permBanner = permissao==='granted' ? '' : `
     <button type="button" id="ativar-notif-btn" class="mais-item" onclick="ativarNotificacoes()">
       <span class="badge-glow amber">${icon('bell')}</span>
-      <span class="mais-item-text"><span class="mais-item-t">Ativar notificações</span><span class="mais-item-s">${permissao==='denied'?'Bloqueadas no navegador — ative nas configurações do dispositivo':'Toque para permitir lembretes do Compasso'}</span></span>
+      <span class="mais-item-text"><span class="mais-item-t">Ativar notificações</span><span class="mais-item-s">${permissao==='denied'?'Bloqueadas no navegador — ative nas configurações do dispositivo':'Toque para permitir lembretes do Monity'}</span></span>
     </button>`;
   return `${permBanner}
     ${NOTIF_TOGGLES.map(x=>`<label class="mais-item" style="cursor:pointer">
@@ -1203,7 +1203,7 @@ function configuracoesView(){
 
     ${cfgGroup('Dados',cfgDadosSecao(),'margin-top:14px;margin-bottom:2px')}
 
-    <p class="muted center" style="font-size:11.5px;margin-top:14px">Compasso v1.0.0</p>`;
+    <p class="muted center" style="font-size:11.5px;margin-top:14px">Monity v1.0.0</p>`;
 }
 function lastAppNext(){ // sugere próximo local no rodízio
   const order=['Abdômen','Coxa direita','Coxa esquerda','Braço direito','Braço esquerdo'];
@@ -1422,14 +1422,14 @@ function obView(){
   if(!OB_MARCO){
     return `<div class="ob">
     <div class="glow-wrap ob-icon">${logoHeroSVG(56)}</div>
-    <h1>Compasso</h1>
+    <h1>Monity</h1>
     <p class="lead">Em que momento da sua jornada você está?<br>Queremos acompanhar sua evolução da forma mais precisa possível.</p>
     <div class="gcard tight marco-card" onclick="obSetMarco('novo')">
       <div class="marco-card-t">Estou começando meu tratamento agora</div>
       <div class="marco-card-s">O primeiro peso que você registrar aqui será seu ponto de partida.</div>
     </div>
     <div class="gcard tight marco-card" onclick="obSetMarco('anterior')">
-      <div class="marco-card-t">Já iniciei meu tratamento e quero acompanhar minha evolução no Compasso</div>
+      <div class="marco-card-t">Já iniciei meu tratamento e quero acompanhar minha evolução no Monity</div>
       <div class="marco-card-s">Você conta onde começou, a gente calcula sua jornada completa desde lá.</div>
     </div>
     <button class="btn-pill block ghost neutral" onclick="startExample()">Ver com dados de exemplo</button>
@@ -1438,7 +1438,7 @@ function obView(){
   const anterior=OB_MARCO==='anterior';
   return `<div class="ob">
     <div class="glow-wrap ob-icon">${logoHeroSVG(56)}</div>
-    <h1>Compasso</h1>
+    <h1>Monity</h1>
     <p class="lead">${anterior?'Conte um pouco sobre o início do seu tratamento — leva menos de um minuto.':'Seu companheiro de tratamento com análogos de GLP-1. Aplicações, peso, medidas, sintomas e evolução — tudo em um diário inteligente que leva menos de um minuto por dia.'}</p>
 
     <div class="glass-card">
@@ -1472,7 +1472,7 @@ function obView(){
     </div>
     <button class="btn-pill block ghost neutral" onclick="obSetMarco(null)">Voltar</button>
     <p class="ob-trust"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Seus dados estão seguros e protegidos</p>
-    <p class="muted center" style="font-size:11.5px;margin-top:10px;line-height:1.5">O Compasso ajuda você a acompanhar seu tratamento, mas não substitui a orientação do seu médico ou nutricionista.</p>
+    <p class="muted center" style="font-size:11.5px;margin-top:10px;line-height:1.5">O Monity ajuda você a acompanhar seu tratamento, mas não substitui a orientação do seu médico ou nutricionista.</p>
   </div>`;
 }
 
@@ -1578,70 +1578,19 @@ function startExample(){S=seedExample();save();toast('Dados de exemplo carregado
 /* ============================================================
    SVG · componentes
    ============================================================ */
-/* Marca Compasso: mostrador parcial (dose) + seringa na diagonal, no lugar
-   da bússola antiga. Cores por token — nunca cravadas, pra funcionar igual
-   nos dois temas (tema claro precisa de seringa escura, não branca). */
+/* Marca Monity (M + check), sempre a partir do PNG oficial exportado de
+   assets/brand/master — nunca desenhada à mão aqui. O ícone já traz seu
+   próprio fundo em degradê azul (funciona igual nos dois temas, claro e
+   escuro, por isso não depende de var(--accent)/var(--tx-1) como a marca
+   antiga dependia). Ver assets/brand/README.md. */
 function logoSVG(size=24){
-  /* Abaixo de ~26px os traços finos e as marcas de dose da versão detalhada
-     viram uma mancha ilegível (confirmado renderizando de verdade em 16 e
-     22px) — usa um traçado mais grosso e sem detalhe interno nesses tamanhos. */
-  if(size<26){
-    return `<svg class="mark" width="${size}" height="${size}" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:${size}px;height:${size}px">
-    <circle cx="20" cy="20" r="14" stroke="var(--accent)" stroke-width="3.6" stroke-linecap="round"
-      stroke-dasharray="66 88" stroke-dashoffset="7" transform="rotate(-90 20 20)"/>
-    <circle cx="29.5" cy="10.5" r="3.4" fill="var(--accent)"/>
-    <g transform="rotate(45 20 20)">
-      <rect x="17.6" y="4" width="4.8" height="3.6" rx="1.3" fill="var(--tx-1)"/>
-      <rect x="16.4" y="9.4" width="7.2" height="3" rx="1.3" fill="var(--tx-1)"/>
-      <rect x="17.4" y="12.4" width="5.2" height="14" rx="1.6" fill="var(--tx-1)"/>
-      <polygon points="17.6,26 22.4,26 20,38" fill="var(--tx-1)"/>
-    </g>
-  </svg>`;
-  }
-  return `<svg class="mark" width="${size}" height="${size}" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:${size}px;height:${size}px">
-    <circle cx="20" cy="20" r="15" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round"
-      stroke-dasharray="70.5 94.2" stroke-dashoffset="7" transform="rotate(-90 20 20)"/>
-    <line x1="24" y1="16" x2="30" y2="10" stroke="var(--accent)" stroke-width="1.4"/>
-    <circle cx="30" cy="10" r="2.6" fill="var(--accent)"/>
-    <circle cx="33.5" cy="14.5" r="1.6" fill="var(--accent-light)"/>
-    <g transform="rotate(45 20 20)">
-      <rect x="18.2" y="3" width="3.6" height="2.8" rx="1" fill="var(--tx-1)"/>
-      <rect x="19.3" y="5.8" width="1.4" height="3.2" fill="var(--tx-1)"/>
-      <rect x="16.6" y="9" width="6.8" height="2.6" rx="1.1" fill="var(--tx-1)"/>
-      <rect x="17.6" y="11.5" width="4.8" height="14.5" rx="1.4" fill="var(--tx-1)"/>
-      <rect x="18.3" y="14.8" width="3.4" height=".8" fill="var(--nv-bg)"/>
-      <rect x="18.3" y="18.2" width="3.4" height=".8" fill="var(--nv-bg)"/>
-      <rect x="18.3" y="21.6" width="3.4" height=".8" fill="var(--nv-bg)"/>
-      <polygon points="18,26 22,26 20,38" fill="var(--tx-1)"/>
-    </g>
-  </svg>`;
+  const r=Math.round(size*0.22);
+  return `<img class="mark" src="icons/icon-512.png" width="${size}" height="${size}" alt="Monity" style="width:${size}px;height:${size}px;border-radius:${r}px;display:block">`;
 }
-/* Variante com efeito 3D (gradientes, brilho, sombra) — usada apenas na tela de Boas-vindas. */
+/* Mesma marca, em tamanho maior — usada na tela de Boas-vindas. */
 function logoHeroSVG(size=84){
-  const id='lh'+size;
-  return `<svg width="${size}" height="${size}" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" class="welcome-icon" style="width:${size}px;height:${size}px;overflow:visible">
-    <defs>
-      <linearGradient id="${id}ring" x1="6" y1="3" x2="34" y2="37" gradientUnits="userSpaceOnUse">
-        <stop offset="0" stop-color="var(--accent-light)"/>
-        <stop offset="1" stop-color="var(--accent-deep)"/>
-      </linearGradient>
-    </defs>
-    <circle cx="20" cy="20" r="15" stroke="url(#${id}ring)" stroke-width="2.2" stroke-linecap="round"
-      stroke-dasharray="70.5 94.2" stroke-dashoffset="7" transform="rotate(-90 20 20)"/>
-    <line x1="24" y1="16" x2="30" y2="10" stroke="var(--accent)" stroke-width="1.4"/>
-    <circle cx="30" cy="10" r="2.8" fill="var(--accent)"/>
-    <circle cx="33.5" cy="14.5" r="1.7" fill="var(--accent-light)"/>
-    <g transform="rotate(45 20 20)">
-      <rect x="18.2" y="3" width="3.6" height="2.8" rx="1" fill="var(--tx-1)"/>
-      <rect x="19.3" y="5.8" width="1.4" height="3.2" fill="var(--tx-1)"/>
-      <rect x="16.6" y="9" width="6.8" height="2.6" rx="1.1" fill="var(--tx-1)"/>
-      <rect x="17.6" y="11.5" width="4.8" height="14.5" rx="1.4" fill="var(--tx-1)"/>
-      <rect x="18.3" y="14.8" width="3.4" height=".8" fill="var(--nv-bg)"/>
-      <rect x="18.3" y="18.2" width="3.4" height=".8" fill="var(--nv-bg)"/>
-      <rect x="18.3" y="21.6" width="3.4" height=".8" fill="var(--nv-bg)"/>
-      <polygon points="18,26 22,26 20,38" fill="var(--tx-1)"/>
-    </g>
-  </svg>`;
+  const r=Math.round(size*0.22);
+  return `<img class="welcome-icon" src="icons/icon-512.png" width="${size}" height="${size}" alt="Monity" style="width:${size}px;height:${size}px;border-radius:${r}px;display:block">`;
 }
 function ringSVG(prog,dose,unit){
   const R=53,C=2*Math.PI*R,off=C*(1-prog);
@@ -2079,7 +2028,7 @@ function periodoRange(){
 
 /* -------- coleta de dados do período --------
    Delega pro motor único (js/report-engine.js, Sprint 020) — mesma
-   lógica de sempre, só que agora compartilhada com o Compasso Pro.
+   lógica de sempre, só que agora compartilhada com o Monity Pro.
    Assinatura preservada: os demais call sites (buildInsightContext,
    relatorioView, gerarRelatorio) continuam chamando coletaDados(ini,fim)
    sem saber que a implementação mudou de lugar. */
@@ -2147,7 +2096,7 @@ function gerarResumo(d,ini,fim){
    Monta o contexto específico deste ambiente (timeline/insights/plano
    de ação vêm dos motores locais, com efeitos colaterais só daqui —
    histórico de insights em localStorage etc.) e entrega pronto pro
-   REPORT.buildPDF(), que é o mesmo motor que o Compasso Pro chama.
+   REPORT.buildPDF(), que é o mesmo motor que o Monity Pro chama.
    ============================================================ */
 function buildPDF(d,ini,fim){
   const tlPeriodo = TIMELINE ? TIMELINE.gerar(buildTimelineContext(),{ini,fim}) : [];
@@ -2241,7 +2190,7 @@ function welcomeView(){
     <div class="welcome-content">
       <div class="welcome-top">
         <div class="glow-wrap">${logoHeroSVG(84)}</div>
-        <div class="welcome-word">Compasso</div>
+        <div class="welcome-word">Monity</div>
         <div class="welcome-tag">Jornada GLP-1</div>
       </div>
       <div class="welcome-mid">
