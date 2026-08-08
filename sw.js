@@ -7,7 +7,7 @@
 // Bump a cada release que altera qualquer arquivo do APP_SHELL abaixo — é o
 // único jeito de o cache stale-while-revalidate parar de servir a versão
 // antiga no primeiro carregamento após o deploy (ver RC2: "Minha Jornada").
-const CACHE_VERSION = 'build-20260809f-fix-propagacao-deletes';
+const CACHE_VERSION = 'build-20260809g-clareza-indicadores';
 const CACHE_NAME = `monity-cache-${CACHE_VERSION}`;
 
 const APP_SHELL = [

@@ -453,6 +453,7 @@ function evPesoTab(w){
   ${tl!=null&&w.length>=2?`<div class="gcard tight">
     <div class="eyebrow2">Evolução registrada no Monity</div>
     <p style="font-size:13px;color:var(--tx-2);margin:6px 0 0;line-height:1.5">Do seu 1º registro no app (${nf(firstTrackedWeight())} kg, ${fmtBRy(w[0].date)}) até hoje: <b style="color:var(--tx-1)">${tl>=0?'−':'+'}${nf(Math.abs(tl))} kg</b></p>
+    <p class="muted" style="font-size:11.5px;margin-top:6px;line-height:1.4">Isso mede sua primeira pesagem digitada aqui — diferente do "Peso inicial do tratamento" acima, que é o Marco Zero informado no cadastro.</p>
   </div>`:''}
   ${evEvolutionCard()}`;
 }

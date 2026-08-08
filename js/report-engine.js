@@ -191,11 +191,16 @@ function reportColetaDados(data, ini, fim) {
 
   const na = reportNextAppInfo(profile, applications);
   const lastAppObj = reportLastApp(applications);
+  // total do tratamento inteiro (históricas informadas no onboarding "já
+  // comecei antes" + todas as registradas no Monity, sem filtro de
+  // período) — exibido ao lado de "aplicações no período" pra não parecer
+  // contraditório com o card "Aplicações" do app (mesmo total de lá).
+  const totalAplicacoesTratamento = (profile.historicalApplicationsCount || 0) + applications.length;
 
   return {
     w, apps, logs, bio: bioP, exams: examsP, pesoIniPeriod, pesoFimPeriod, varPeso,
     mediaAgua, metaAguaAtingida, diasTotal: logs.length, mediaProt, adesaoProt,
-    contSint, mediaHumor, apetiteDom, na, lastAppObj,
+    contSint, mediaHumor, apetiteDom, na, lastAppObj, totalAplicacoesTratamento,
   };
 }
 
@@ -523,7 +528,8 @@ html,body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,s
     <div class="hero-stat accent ${d.varPeso > 0 ? 'warn' : ''}"><div class="hs-label">Variação no período</div>
       <div class="hs-val">${d.varPeso <= 0 ? '−' : '+'}${reportNf(Math.abs(d.varPeso))}<small> kg</small></div></div>
     <div class="hero-stat"><div class="hs-label">Aplicações no período</div>
-      <div class="hs-val">${d.apps.length}</div></div>
+      <div class="hs-val">${d.apps.length}</div>
+      <div class="hs-sub">${d.totalAplicacoesTratamento} no total do tratamento</div></div>
   </div>
   <div class="kv c3">
     ${rxSecundario.map(([lbl, val]) => `<div class="kc"><div class="kl">${lbl}</div><div class="kv2">${val}</div></div>`).join('')}
@@ -537,6 +543,7 @@ ${modulos.aplicacoes ? `<div class="section">
     <div class="kc"><div class="kl">Dose atual</div><div class="kv2">${reportEsc(p.doseAtual)} ${reportEsc(p.unidade)}</div></div>
     <div class="kc"><div class="kl">Frequência</div><div class="kv2">1× por semana</div></div>
     <div class="kc"><div class="kl">Aplicações no período</div><div class="kv2">${d.apps.length}</div></div>
+    <div class="kc"><div class="kl">Aplicações no total do tratamento</div><div class="kv2">${d.totalAplicacoesTratamento}</div></div>
     <div class="kc"><div class="kl">Última aplicação</div><div class="kv2">${d.lastAppObj ? reportFmtBRy(d.lastAppObj.date) : '—'}</div></div>
     <div class="kc"><div class="kl">Próxima aplicação</div><div class="kv2">${na.days === 0 ? 'Hoje' : REPORT_WD[p.diaAplicacao] + ', ' + reportFmtBRy(na.date)}</div></div>
   </div>
