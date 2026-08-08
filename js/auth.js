@@ -66,8 +66,27 @@ export function onAuthStateChange(cb){
   return supabase.auth.onAuthStateChange(cb);
 }
 
+/* Apaga a CONTA em si (auth.users), não só os dados do tratamento —
+   diferente do "Excluir todos os dados" (que é um reset via
+   DB.wipeServerData()). delete_own_account() é uma função Postgres
+   SECURITY DEFINER (supabase/schema_delete_account.sql) — o cliente
+   nunca tem permissão direta pra apagar de auth.users, só a função
+   rodando com privilégio elevado consegue, e só a linha do próprio
+   auth.uid() (checado dentro da função, nunca confia num id vindo do
+   cliente). Cascata (on delete cascade, já existente em todas as
+   tabelas do paciente) apaga profile/pesagens/aplicações/etc. junto. */
+export async function deleteAccount(){
+  try{
+    const {error}=await supabase.rpc('delete_own_account');
+    if(error) return {ok:false,error:traduzErro(error)};
+    const {error:signOutError}=await supabase.auth.signOut();
+    if(signOutError) return {ok:false,error:traduzErro(signOutError)};
+    return {ok:true};
+  }catch(e){ return {ok:false,error:traduzErro(e)}; }
+}
+
 export { supabase };
 
-const authApi={signUp,signIn,signOut,resetPasswordForEmail,updatePassword,onAuthStateChange};
+const authApi={signUp,signIn,signOut,resetPasswordForEmail,updatePassword,onAuthStateChange,deleteAccount};
 if(window.__resolveAuthReady) window.__resolveAuthReady(authApi);
 else window.__authReady=Promise.resolve(authApi);

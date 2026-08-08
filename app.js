@@ -1103,6 +1103,9 @@ function sheetBody(id){
   if(id==='confirmarReset') return `<h2>Excluir todos os dados?</h2><p class="sub">Isso exclui permanentemente tudo o que você registrou no Monity — pesagens, aplicações, diário, exames e configurações. Esta ação não pode ser desfeita.</p>
     <button class="btn-pill block ghost neutral" onclick="openSheet('perfil')">Cancelar</button>
     <button class="btn-pill block danger" style="margin-top:10px" onclick="confirmarResetAll()">Excluir tudo</button>`;
+  if(id==='confirmarExcluirConta') return `<h2>Excluir sua conta?</h2><p class="sub">Diferente de "excluir todos os dados", isso apaga a própria conta — seu login deixa de existir. Você não conseguirá mais entrar com este e-mail, e precisaria se cadastrar de novo do zero pra voltar a usar o Monity. Esta ação não pode ser desfeita.</p>
+    <button class="btn-pill block ghost neutral" onclick="openSheet('perfil')">Cancelar</button>
+    <button class="btn-pill block danger" style="margin-top:10px" onclick="confirmarExcluirConta()">Excluir minha conta</button>`;
   return '';
 }
 
@@ -1168,6 +1171,10 @@ function cfgDadosSecao(){
     <button type="button" class="mais-item danger" onclick="resetAll()">
       <span class="badge-glow danger">${icon('alert')}</span>
       <span class="mais-item-text"><span class="mais-item-t">Excluir todos os dados</span><span class="mais-item-s">Exclui permanentemente tudo o que você registrou</span></span>
+    </button>
+    <button type="button" class="mais-item danger" onclick="excluirConta()">
+      <span class="badge-glow danger">${icon('alert')}</span>
+      <span class="mais-item-text"><span class="mais-item-t">Excluir minha conta</span><span class="mais-item-s">Apaga a conta em si — você não conseguirá mais entrar com este e-mail</span></span>
     </button>`;
 }
 const NOTIF_TOGGLES=[
@@ -1368,6 +1375,21 @@ async function confirmarResetAll(){
   if(INSIGHTS) INSIGHTS.limparHistorico();
   if(ACTIONPLAN) ACTIONPLAN.limparStatus();
   closeSheet();go('inicio');
+}
+function excluirConta(){
+  openSheet('confirmarExcluirConta');
+}
+/* Diferente de confirmarResetAll(): isso apaga a CONTA (auth.users),
+   não só os dados do tratamento — a pessoa não consegue mais logar
+   com este e-mail depois. deleteAccount() (js/auth.js) já chama
+   signOut() internamente; o listener SIGNED_OUT (registrarListenerAuth)
+   cuida de zerar S/localStorage/históricos órfãos — mesmo caminho que
+   qualquer outro logout, sem duplicar lógica aqui. */
+async function confirmarExcluirConta(){
+  closeSheet();
+  const auth=await window.__authReady;
+  const r=await auth.deleteAccount();
+  if(!r.ok){ toast(r.error); return; }
 }
 
 /* ---------- diário actions ---------- */
