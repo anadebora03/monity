@@ -19,6 +19,10 @@ export type ReportProfile = {
   altura: number | null;
   metaAgua: number | null;
   metaProteina: number | null;
+  historicalTreatment: boolean | null;
+  historicalApplicationsCount: number | null;
+  monityStartDate: string | null;
+  lastApplicationDate: string | null;
 };
 
 export type ReportPatientData = {
@@ -33,8 +37,9 @@ export type ReportPatientData = {
 export async function getReportPatientData(supabase: SupabaseClient, patientId: string): Promise<ReportPatientData | null> {
   const { data: profile } = await supabase
     .from('profiles')
-    .select('nome, medicamento, dose_atual, unidade, dia_aplicacao, data_inicio, peso_inicial, peso_meta, altura, meta_agua, meta_proteina')
+    .select('nome, medicamento, dose_atual, unidade, dia_aplicacao, data_inicio, peso_inicial, peso_meta, altura, meta_agua, meta_proteina, historical_treatment, historical_applications_count, monity_start_date, last_application_date')
     .eq('id', patientId)
+    .is('deleted_at', null)
     .maybeSingle();
 
   // sem perfil completo (paciente ainda não abriu o app pra terminar o
@@ -42,12 +47,18 @@ export async function getReportPatientData(supabase: SupabaseClient, patientId: 
   // suficientes pra montar um relatório de verdade.
   if (!profile) return null;
 
+  // .is('deleted_at', null) nas 5 consultas: sem isso, um registro
+  // apagado pelo paciente (ex.: "Começar novamente", ou uma pesagem de
+  // teste removida manualmente) continua aparecendo no relatório do
+  // profissional mesmo depois de sumir do app — essa camada é uma
+  // implementação separada de js/database.js, então precisa do mesmo
+  // filtro que lá já é aplicado.
   const [{ data: weighings }, { data: applications }, { data: dailyLogs }, { data: bio }, { data: exams }] = await Promise.all([
-    supabase.from('weighings').select('date, peso, cintura, quadril, abdomen, coxa, braco').eq('user_id', patientId).order('date', { ascending: true }),
-    supabase.from('applications').select('date, dose, medicamento, local, obs').eq('user_id', patientId).order('date', { ascending: true }),
-    supabase.from('daily_logs').select('date, agua, proteina, sintomas, humor, apetite').eq('user_id', patientId).order('date', { ascending: true }),
-    supabase.from('bioimpedance').select('date, gordura, massa_magra, musculo, agua, visceral, tmb').eq('user_id', patientId).order('date', { ascending: true }),
-    supabase.from('exams').select('date, tipo, valor').eq('user_id', patientId).order('date', { ascending: true }),
+    supabase.from('weighings').select('date, peso, cintura, quadril, abdomen, coxa, braco').eq('user_id', patientId).is('deleted_at', null).order('date', { ascending: true }),
+    supabase.from('applications').select('date, dose, medicamento, local, obs').eq('user_id', patientId).is('deleted_at', null).order('date', { ascending: true }),
+    supabase.from('daily_logs').select('date, agua, proteina, sintomas, humor, apetite').eq('user_id', patientId).is('deleted_at', null).order('date', { ascending: true }),
+    supabase.from('bioimpedance').select('date, gordura, massa_magra, musculo, agua, visceral, tmb').eq('user_id', patientId).is('deleted_at', null).order('date', { ascending: true }),
+    supabase.from('exams').select('date, tipo, valor').eq('user_id', patientId).is('deleted_at', null).order('date', { ascending: true }),
   ]);
 
   return {
@@ -63,6 +74,10 @@ export async function getReportPatientData(supabase: SupabaseClient, patientId: 
       altura: profile.altura,
       metaAgua: profile.meta_agua,
       metaProteina: profile.meta_proteina,
+      historicalTreatment: profile.historical_treatment,
+      historicalApplicationsCount: profile.historical_applications_count,
+      monityStartDate: profile.monity_start_date,
+      lastApplicationDate: profile.last_application_date,
     },
     weighings: weighings ?? [],
     applications: applications ?? [],
