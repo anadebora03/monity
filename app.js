@@ -160,6 +160,18 @@ function seedExample(){
    app é o peso ATUAL informado (hoje), não o peso do início do tratamento
    (p.pesoInicial/p.dataInicio seguem só como referência histórica pros
    indicadores — nunca viram um registro de pesagem). */
+/* Casco vazio (profile:null) usado quando o Supabase traz dados de um
+   dispositivo que nunca fez onboarding local — ex.: login num navegador
+   novo, numa conta que já tem perfil no servidor. Sem isso, pullProfile()/
+   pullPen()/pullCollection()/pullDailyLogs() (js/database.js) recebiam
+   S===null do applyRemote() e quebravam ao tentar mutar S.profile/S.pen/
+   S[nome] de um null — o erro era engolido pelo try/catch de syncNow(),
+   então o app ficava preso na tela de onboarding pra sempre, mesmo com o
+   perfil já existindo no servidor. */
+function emptyState(){
+  return {profile:null,weighings:[],applications:[],dailyLogs:{},
+    exams:[],agenda:[],bio:[],pen:{capacidadeMg:0,doseMg:0,usadas:0},created:null};
+}
 function blankState(p,firstWeighing){
   const w=firstWeighing||{date:p.dataInicio,peso:p.pesoInicial};
   return {profile:p,weighings:[{id:crypto.randomUUID(),date:w.date,peso:w.peso}],applications:[],dailyLogs:{},
@@ -189,7 +201,7 @@ let EV_TAB='peso';
 function evSetTab(t){EV_TAB=t;render();}
 function render(){
   const app=document.getElementById('app');
-  if(!S){ app.innerHTML=obView(); return; }
+  if(!S||!S.profile){ app.innerHTML=obView(); return; }
   const premiumScreen=QP_TABS.includes(TAB)||(TAB==='mais'&&(SUB===null||['relatorio','insights','planoacao','timeline','conquistas','stats','calc','exames','agenda','bio','jornada'].includes(SUB)))||TAB==='premium';
   app.innerHTML = topView() + `<div class="screen ${premiumScreen?'':'legacy'}" id="scr"></div>` + navView();
   const scr=document.getElementById('scr');
@@ -2443,7 +2455,7 @@ async function initDatabase(){
     ]);
     if(DB) DB.init({
       getState:()=>S,
-      applyRemote:(mutate)=>{ S=mutate(S); persistLocal(); render(); },
+      applyRemote:(mutate)=>{ S=mutate(S||emptyState()); persistLocal(); render(); },
       // dispositivo reaproveitado por outra conta: descarta o estado local
       // residual (nunca era dela) em vez de deixar migrateIfNeeded() herdá-lo
       resetLocal:()=>{ S=null; persistLocal(); render(); },
