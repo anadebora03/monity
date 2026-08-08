@@ -211,14 +211,20 @@ async function pullCollection(name){
   const meta = loadMeta();
   const seen = meta[name] || {};
   const since = meta['pull_'+name] || '1970-01-01T00:00:00Z';
+  // sem .is('deleted_at', null) aqui de propósito: um registro soft-deletado
+  // também tem updated_at novo (o UPDATE que gravou deleted_at) e PRECISA
+  // aparecer nesta busca incremental, senão nenhum dispositivo que já tinha
+  // puxado esse registro antes fica sabendo que ele foi apagado — ele
+  // simplesmente some da query e nunca é removido do S[name] local.
   const {data, error} = await supabase.from(cfg.table)
-    .select('*').eq('user_id', userId).gt('updated_at', since).is('deleted_at', null)
+    .select('*').eq('user_id', userId).gt('updated_at', since)
     .order('updated_at', {ascending:true});
   if(error){ console.error(`[Sync] falha ao buscar ${name}:`, error.message); return; }
   if(!data || !data.length) return;
   host.applyRemote(S=>{
     const byId = new Map(S[name].map(r=>[r.id, r]));
     for(const row of data){
+      if(row.deleted_at){ byId.delete(row.id); seen[row.id] = {fp:'__deleted__', at:row.updated_at}; continue; }
       const rec = {id:row.id, date:row.date, ...fromRow(cfg.cols, row)};
       byId.set(row.id, rec);
       seen[row.id] = {fp:JSON.stringify(rec), at:row.updated_at};
@@ -231,12 +237,24 @@ async function pullCollection(name){
   saveMeta(meta);
 }
 async function pullProfile(){
-  // .is('deleted_at', null): mesmo filtro já usado por toda pullCollection()/
-  // pullPen()/pullDailyLogs() — sem ele, um perfil soft-deletado por
-  // wipeServerData() ("Começar novamente") voltaria a ser lido como válido.
-  const {data, error} = await supabase.from('profiles').select('*').eq('id', userId).is('deleted_at', null).maybeSingle();
-  if(error || !data) return;
+  // sem .is('deleted_at', null) na query, pelo mesmo motivo de
+  // pullCollection(): precisamos SABER quando o servidor diz "apagado"
+  // pra zerar o S.profile local, não só deixar de atualizá-lo.
+  const {data, error} = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+  if(error) return;
   const meta = loadMeta();
+  if(!data || data.deleted_at){
+    // !data: usuário nunca onboardou no servidor ainda — não mexe no
+    // local (pode ter onboarding local pendente de push). data.deleted_at:
+    // wipeServerData() apagou o perfil (reset) — aí sim zeramos, senão
+    // o perfil "resetado" volta a aparecer neste ou noutro dispositivo.
+    if(data && data.deleted_at){
+      host.applyRemote(S=>{ S.profile = null; return S; });
+      meta.profile = null;
+      saveMeta(meta);
+    }
+    return;
+  }
   host.applyRemote(S=>{
     S.profile = {...S.profile, ...fromRow(PROFILE_COLS, data)};
     meta.profile = {fp:JSON.stringify(S.profile), at:data.updated_at};
@@ -245,9 +263,15 @@ async function pullProfile(){
   saveMeta(meta);
 }
 async function pullPen(){
-  const {data, error} = await supabase.from('pens').select('*').eq('user_id', userId).is('deleted_at', null).maybeSingle();
+  const {data, error} = await supabase.from('pens').select('*').eq('user_id', userId).maybeSingle();
   if(error || !data) return;
   const meta = loadMeta();
+  if(data.deleted_at){
+    host.applyRemote(S=>{ S.pen = {capacidadeMg:0, doseMg:0, usadas:0}; return S; });
+    meta.pen = null;
+    saveMeta(meta);
+    return;
+  }
   host.applyRemote(S=>{
     S.pen = {id:data.id, ...fromRow(PEN_COLS, data)};
     meta.pen = {fp:JSON.stringify(S.pen), at:data.updated_at};
@@ -259,13 +283,15 @@ async function pullDailyLogs(){
   const meta = loadMeta();
   const seen = meta.dailyLogs || {};
   const since = meta.pull_dailyLogs || '1970-01-01T00:00:00Z';
+  // sem .is('deleted_at', null) — mesmo motivo de pullCollection().
   const {data, error} = await supabase.from('daily_logs')
-    .select('*').eq('user_id', userId).gt('updated_at', since).is('deleted_at', null)
+    .select('*').eq('user_id', userId).gt('updated_at', since)
     .order('updated_at', {ascending:true});
   if(error || !data || !data.length) return;
   host.applyRemote(S=>{
     if(!S.dailyLogs) S.dailyLogs = {};
     for(const row of data){
+      if(row.deleted_at){ delete S.dailyLogs[row.date]; seen[row.date] = {fp:'__deleted__', at:row.updated_at}; continue; }
       S.dailyLogs[row.date] = {
         ...(S.dailyLogs[row.date]||{}),
         ...fromRow(DAILY_COLS, row),
