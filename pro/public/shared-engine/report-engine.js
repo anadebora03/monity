@@ -524,13 +524,15 @@ html,body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,s
 <div class="section">
   <div class="section-head"><span class="dot"></span><span class="section-title">Resumo executivo</span></div>
   <div class="hero-grid" style="margin-bottom:12px">
-    <div class="hero-stat accent"><div class="hs-label">Perdido desde o início</div>
+    <div class="hero-stat accent"><div class="hs-label">Evolução desde o início</div>
       <div class="hs-val">−${reportNf(reportLost(allWeighings, p))}<small> kg</small></div>
       <div class="hs-sub">${reportNf(reportLostPct(allWeighings, p))}% do peso inicial</div></div>
-    <div class="hero-stat accent ${d.varPeso > 0 ? 'warn' : ''}"><div class="hs-label">Variação no período</div>
-      <div class="hs-val">${d.varPeso <= 0 ? '−' : '+'}${reportNf(Math.abs(d.varPeso))}<small> kg</small></div></div>
+    <div class="hero-stat"><div class="hs-label">Meta de peso</div>
+      <div class="hs-val">${reportNf(p.pesoMeta)}<small> kg</small></div>
+      <div class="hs-sub">${falta > 0 ? `Faltam ${reportNf(falta)} kg` : 'Meta alcançada'}</div></div>
     <div class="hero-stat"><div class="hs-label">Aplicações realizadas</div>
-      <div class="hs-val">${d.totalAplicacoesTratamento}</div></div>
+      <div class="hs-val">${d.totalAplicacoesTratamento}<small> aplicações</small></div>
+      <div class="hs-sub">${d.lastAppObj ? `Última: ${reportFmtBRy(d.lastAppObj.date)}` : 'Nenhuma registrada'}</div></div>
   </div>
   <div class="kv c3">
     ${rxSecundario.map(([lbl, val]) => `<div class="kc"><div class="kl">${lbl}</div><div class="kv2">${val}</div></div>`).join('')}
