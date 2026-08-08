@@ -120,7 +120,17 @@ async function refresh(){
   return {ok:true, plan:m.plan, status:calcularStatus(m)};
 }
 
-const licenseApi = {getStatus, getPlan, hasPremium, can, getExpiration, daysRemaining, isTrial, refresh, FEATURES};
+/* Sprint 3.1 (auditoria K.1): o modelo de licença é 100% local (nunca
+   sincroniza entre dispositivos, comentário acima) e não é
+   segmentado por usuário — sem isso, o plano da conta anterior
+   continuaria valendo por um instante pra próxima conta que logar no
+   mesmo aparelho, até um refresh() reavaliar. Chamada pelo handler
+   SIGNED_OUT em app.js. */
+function limparCache(){
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+}
+
+const licenseApi = {getStatus, getPlan, hasPremium, can, getExpiration, daysRemaining, isTrial, refresh, limparCache, FEATURES};
 
 if(window.__resolveLicenseReady) window.__resolveLicenseReady(licenseApi);
 else window.__licenseReady = Promise.resolve(licenseApi);

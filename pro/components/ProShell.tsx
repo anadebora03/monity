@@ -15,10 +15,12 @@ import { Logo } from '@/components/ui/Logo';
 export function ProShell({
   nome,
   workspaceName,
+  fotoUrl,
   children,
 }: {
   nome: string;
   workspaceName: string;
+  fotoUrl?: string | null;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -55,11 +57,11 @@ export function ProShell({
           >
             <X size={18} strokeWidth={2} />
           </button>
-          <Sidebar nome={nome} workspaceName={workspaceName} />
+          <Sidebar nome={nome} workspaceName={workspaceName} fotoUrl={fotoUrl} />
         </div>
       </div>
 
-      <div className="lg:ml-64">{children}</div>
+      <div className="lg:ml-56">{children}</div>
     </div>
   );
 }

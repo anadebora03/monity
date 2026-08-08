@@ -88,20 +88,20 @@ export function PatientDetailView({
   const [aba, setAba] = useState<AbaId>('geral');
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-8 sm:px-8">
+    <div className="mx-auto max-w-6xl px-6 py-7 sm:px-8">
       <PatientHeader p={p} workspaceId={workspaceId} prioridade={prioridade} />
 
-      <div className="mt-6">
+      <div className="mt-4">
         <StatsGrid p={p} />
       </div>
 
-      <div className="mt-6 overflow-x-auto">
+      <div className="mt-4 overflow-x-auto">
         <div className="flex w-max gap-1 border-b border-slate-100 dark:border-white/5">
           {ABAS.map((t) => (
             <button
               key={t.id}
               onClick={() => setAba(t.id)}
-              className={`shrink-0 border-b-2 px-3.5 py-2.5 text-sm font-medium transition-colors duration-150 ${
+              className={`shrink-0 border-b-[1.5px] px-3 py-2 text-[13px] font-medium transition-colors duration-150 ${
                 aba === t.id
                   ? 'border-accent text-accent dark:border-accent-light dark:text-accent-light'
                   : 'border-transparent text-ink-soft hover:text-ink dark:text-white/50 dark:hover:text-white'
@@ -113,7 +113,7 @@ export function PatientDetailView({
         </div>
       </div>
 
-      <div className="mt-5">
+      <div className="mt-4">
         {aba === 'geral' && (
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <div className="space-y-4 lg:col-span-2">

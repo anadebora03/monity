@@ -23,13 +23,13 @@ export function StatCard({
   tone?: Tone;
 }) {
   return (
-    <Card className="animate-fade-in p-5 transition-transform duration-200 ease-out hover:-translate-y-0.5">
-      <div className={`flex h-10 w-10 items-center justify-center rounded-sm ${ICON_TONE[tone]}`}>
-        <Icon size={18} strokeWidth={2} />
+    <Card className="animate-fade-in p-4 transition-transform duration-200 ease-out hover:-translate-y-0.5">
+      <div className={`flex h-8 w-8 items-center justify-center rounded-xs ${ICON_TONE[tone]}`}>
+        <Icon size={15} strokeWidth={2} />
       </div>
-      <p className="mt-4 text-[13px] font-medium text-ink-soft dark:text-white/60">{label}</p>
-      <p className="mt-1 text-[26px] font-bold tracking-[-0.02em] text-ink dark:text-white">{value}</p>
-      {caption && <p className="mt-1 text-xs text-ink-faint dark:text-white/40">{caption}</p>}
+      <p className="mt-2.5 text-xs font-medium text-ink-soft dark:text-white/60">{label}</p>
+      <p className="mt-0.5 text-[22px] font-bold tracking-[-0.02em] text-ink dark:text-white">{value}</p>
+      {caption && <p className="mt-0.5 text-[11px] text-ink-faint dark:text-white/40">{caption}</p>}
     </Card>
   );
 }

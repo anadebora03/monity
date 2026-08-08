@@ -9,7 +9,7 @@ function nf(n: number) {
 export function StatsGrid({ p }: { p: PatientDetail }) {
   const variacao = p.variacaoTotal;
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-6">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
       <StatCard icon={Scale} label="Peso atual" value={p.pesoAtual != null ? `${nf(p.pesoAtual)} kg` : '—'} />
       <StatCard
         icon={variacao != null && variacao >= 0 ? TrendingDown : TrendingUp}

@@ -4,6 +4,8 @@ export type PacienteLista = {
   id: string;
   nome: string;
   email: string | null;
+  avatarUrl: string | null;
+  accessSource: 'professional' | 'independent' | null;
   pesoAtual: number | null;
   ultimoRegistro: string;
   dataVinculo: string | null;
@@ -29,17 +31,20 @@ export async function listarPacientes(supabase: SupabaseClient): Promise<Pacient
   if (!data || data.length === 0) return [];
 
   const ids = data.map((r) => r.patient_id);
-  const { data: relacionamentos } = await supabase
-    .from('patient_relationships')
-    .select('patient_id, patient_email')
-    .in('patient_id', ids)
-    .eq('status', 'active');
+  const [{ data: relacionamentos }, { data: perfis }] = await Promise.all([
+    supabase.from('patient_relationships').select('patient_id, patient_email, access_source').in('patient_id', ids).eq('status', 'active'),
+    supabase.from('profiles').select('id, avatar_url').in('id', ids),
+  ]);
   const emailById = new Map((relacionamentos ?? []).map((r) => [r.patient_id, r.patient_email as string | null]));
+  const accessSourceById = new Map((relacionamentos ?? []).map((r) => [r.patient_id, r.access_source as PacienteLista['accessSource']]));
+  const avatarById = new Map((perfis ?? []).map((p) => [p.id, p.avatar_url as string | null]));
 
   return data.map((r) => ({
     id: r.patient_id,
     nome: r.nome || emailById.get(r.patient_id) || 'Paciente',
     email: emailById.get(r.patient_id) ?? null,
+    avatarUrl: avatarById.get(r.patient_id) ?? null,
+    accessSource: accessSourceById.get(r.patient_id) ?? null,
     pesoAtual: r.peso_atual,
     ultimoRegistro: r.ultimo_registro,
     dataVinculo: r.data_vinculo,

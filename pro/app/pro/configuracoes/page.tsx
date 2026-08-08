@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { Card } from '@/components/ui/Card';
 import { ConfiguracoesForm } from '@/components/ConfiguracoesForm';
+import { ContaForm } from '@/components/ContaForm';
 
 const STATUS_LABEL: Record<string, string> = { active: 'Ativo', inactive: 'Inativo', suspended: 'Suspenso' };
 
@@ -13,7 +14,7 @@ export default async function ConfiguracoesPage() {
 
   const { data: profile } = await supabase
     .from('professional_profiles')
-    .select('nome, profession_id, professions ( nome )')
+    .select('nome, profession_id, foto_url, crn_crm, especialidade, telefone, cidade, estado, biografia, professions ( nome )')
     .eq('id', user!.id)
     .maybeSingle();
 
@@ -33,16 +34,23 @@ export default async function ConfiguracoesPage() {
 
       <Card className="mt-8">
         <p className="text-xs font-semibold uppercase tracking-[.09em] text-ink-faint dark:text-white/40">Editar perfil</p>
-        <ConfiguracoesForm nomeInicial={profile?.nome || user?.email || ''} workspaceNomeInicial={workspace?.nome ?? ''} />
+        <ConfiguracoesForm
+          nomeInicial={profile?.nome || user?.email || ''}
+          workspaceNomeInicial={workspace?.nome ?? ''}
+          fotoUrlInicial={profile?.foto_url ?? null}
+          telefoneInicial={profile?.telefone ?? ''}
+          crnCrmInicial={profile?.crn_crm ?? ''}
+          especialidadeInicial={profile?.especialidade ?? ''}
+          cidadeInicial={profile?.cidade ?? ''}
+          estadoInicial={profile?.estado ?? ''}
+          biografiaInicial={profile?.biografia ?? ''}
+        />
       </Card>
 
       <Card className="mt-4">
-        <p className="text-xs font-semibold uppercase tracking-[.09em] text-ink-faint dark:text-white/40">Profissional</p>
-        <dl className="mt-3 space-y-2 text-sm">
-          <div className="flex justify-between">
-            <dt className="text-ink-soft dark:text-white/60">E-mail</dt>
-            <dd className="font-medium text-ink dark:text-white">{user?.email}</dd>
-          </div>
+        <p className="text-xs font-semibold uppercase tracking-[.09em] text-ink-faint dark:text-white/40">Conta</p>
+        <ContaForm emailInicial={user?.email ?? ''} />
+        <dl className="mt-4 space-y-2 border-t border-slate-100 pt-3 text-sm dark:border-white/5">
           <div className="flex justify-between">
             <dt className="text-ink-soft dark:text-white/60">Profissão</dt>
             <dd className="font-medium text-ink dark:text-white">{professionName ?? '—'}</dd>

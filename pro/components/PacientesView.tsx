@@ -16,6 +16,10 @@ function formatDate(iso: string | null) {
 function diasDesde(iso: string) {
   return Math.round((Date.now() - new Date(iso).getTime()) / 86400000);
 }
+const ACCESS_SOURCE_LABEL: Record<'professional' | 'independent', string> = {
+  professional: 'Acesso fornecido por mim',
+  independent: 'Assinatura própria',
+};
 
 export function PacientesView({ pacientes }: { pacientes: PacienteLista[] }) {
   const router = useRouter();
@@ -102,10 +106,14 @@ export function PacientesView({ pacientes }: { pacientes: PacienteLista[] }) {
                     >
                       <td className="py-3 pr-4">
                         <div className="flex items-center gap-2.5">
-                          <Avatar nome={p.nome} size={30} />
+                          <Avatar nome={p.nome} size={30} fotoUrl={p.avatarUrl} />
                           <div className="min-w-0">
                             <p className="truncate font-medium text-ink dark:text-white">{p.nome}</p>
-                            {p.email && <p className="truncate text-xs text-ink-faint dark:text-white/40">{p.email}</p>}
+                            {p.accessSource ? (
+                              <p className="truncate text-xs text-ink-faint dark:text-white/40">{ACCESS_SOURCE_LABEL[p.accessSource]}</p>
+                            ) : (
+                              p.email && <p className="truncate text-xs text-ink-faint dark:text-white/40">{p.email}</p>
+                            )}
                           </div>
                         </div>
                       </td>

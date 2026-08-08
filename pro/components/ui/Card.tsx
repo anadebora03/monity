@@ -4,7 +4,7 @@ export function Card({ className = '', ...props }: HTMLAttributes<HTMLDivElement
   return (
     <div
       {...props}
-      className={`rounded-lg border border-slate-100 bg-white p-6 shadow-card transition-shadow duration-200 ease-out dark:border-white/5 dark:bg-navy-soft dark:shadow-card-dark ${className}`}
+      className={`rounded-md border border-slate-100 bg-white p-5 shadow-card transition-shadow duration-200 ease-out dark:border-white/5 dark:bg-navy-soft dark:shadow-card-dark ${className}`}
     />
   );
 }

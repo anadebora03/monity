@@ -73,8 +73,11 @@ export type PatientDetail = {
   encontrado: boolean;
   perfilCompleto: boolean;
   patientId: string;
+  relationshipId: string | null;
+  accessSource: 'professional' | 'independent' | null;
   nome: string;
   email: string | null;
+  avatarUrl: string | null;
   medicamento: string | null;
   doseAtual: string | null;
   unidade: string | null;
@@ -111,8 +114,11 @@ function vazio(patientId: string): PatientDetail {
     encontrado: false,
     perfilCompleto: false,
     patientId,
+    relationshipId: null,
+    accessSource: null,
     nome: 'Paciente',
     email: null,
+    avatarUrl: null,
     medicamento: null,
     doseAtual: null,
     unidade: null,
@@ -145,7 +151,7 @@ function vazio(patientId: string): PatientDetail {
 export async function getPatientDetail(supabase: SupabaseClient, patientId: string): Promise<PatientDetail> {
   const { data: rel } = await supabase
     .from('patient_relationships')
-    .select('nome_convidado, patient_email, accepted_at')
+    .select('id, nome_convidado, patient_email, accepted_at, access_source')
     .eq('patient_id', patientId)
     .eq('status', 'active')
     .maybeSingle();
@@ -163,7 +169,7 @@ export async function getPatientDetail(supabase: SupabaseClient, patientId: stri
     { data: planosRows },
     { data: relatoriosRows },
   ] = await Promise.all([
-    supabase.from('profiles').select('nome, medicamento, dose_atual, unidade, dia_aplicacao, data_inicio, peso_inicial, peso_meta, altura, created_at').eq('id', patientId).maybeSingle(),
+    supabase.from('profiles').select('nome, medicamento, dose_atual, unidade, dia_aplicacao, data_inicio, peso_inicial, peso_meta, altura, created_at, avatar_url').eq('id', patientId).maybeSingle(),
     supabase.from('weighings').select('date, peso, cintura, quadril, abdomen, coxa, braco').eq('user_id', patientId).order('date', { ascending: true }),
     supabase.from('applications').select('date, dose, medicamento, local, obs').eq('user_id', patientId).order('date', { ascending: true }),
     supabase.from('bioimpedance').select('date, gordura, massa_magra, musculo, agua, visceral, tmb').eq('user_id', patientId).order('date', { ascending: true }),
@@ -452,8 +458,11 @@ export async function getPatientDetail(supabase: SupabaseClient, patientId: stri
     encontrado: true,
     perfilCompleto,
     patientId,
+    relationshipId: rel.id,
+    accessSource: rel.access_source,
     nome,
     email: rel.patient_email,
+    avatarUrl: profile?.avatar_url ?? null,
     medicamento: profile?.medicamento ?? null,
     doseAtual: profile?.dose_atual ?? null,
     unidade: profile?.unidade ?? null,

@@ -1131,8 +1131,25 @@ function cfgGroup(label,bodyHtml,extraStyle){
     ${bodyHtml}
   </div>`;
 }
+function iniciais(nome){
+  return (nome||'').trim().split(/\s+/).slice(0,2).map(p=>p[0]||'').join('').toUpperCase()||'?';
+}
+function avatarBlock(p){
+  const foto=p.avatarUrl;
+  return `<div class="glass-field" style="margin-bottom:14px">
+    <label>Foto de perfil</label>
+    <div style="display:flex;align-items:center;gap:12px;margin-top:6px">
+      <div id="pf-avatar-preview" style="width:56px;height:56px;border-radius:50%;overflow:hidden;flex:0 0 auto;background:var(--accent-deep);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:17px;${foto?`background-image:url('${esc(foto)}');background-size:cover;background-position:center`:''}">${foto?'':iniciais(p.nome)}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" id="pf-avatar-btn" class="btn-pill btn-sm ghost" onclick="document.getElementById('pf-avatar-file').click()">Alterar foto</button>
+        ${foto?`<button type="button" class="btn-pill btn-sm ghost neutral" onclick="removerAvatar()">Remover</button>`:''}
+      </div>
+    </div>
+    <input type="file" id="pf-avatar-file" accept="image/*" style="display:none" onchange="onAvatarPicked(this)">
+  </div>`;
+}
 function cfgPerfilSecao(p,ic,meds,medIdx){
-  return `<div class="glass-field"><label for="pf-nome">Nome</label>
+  return avatarBlock(p)+`<div class="glass-field"><label for="pf-nome">Nome</label>
       <label class="field-wrap" for="pf-nome">${ic('user')}<input id="pf-nome" value="${esc(p.nome)}"></label></div>
     <div class="glass-field-2">
       <div class="glass-field"><label>Medicamento</label>${comboField('pf-med','pill',meds.map(m=>({value:m,label:m})),medIdx)}</div>
@@ -1237,9 +1254,26 @@ async function ativarNotificacoes(){
   });
   render();
 }
-/* Seções futuras (Conta, Privacidade, Integrações) entram aqui como
-   cfgContaSecao(), cfgPrivacidadeSecao(), cfgIntegracoesSecao() —
-   sem lógica própria enquanto as funcionalidades não existirem. */
+/* Seções futuras (Privacidade, Integrações) entram aqui como
+   cfgPrivacidadeSecao(), cfgIntegracoesSecao() — sem lógica própria
+   enquanto as funcionalidades não existirem. cfgContaSecao() (e-mail
+   e senha) já foi implementada, ver abaixo. */
+function cfgContaSecao(ic){
+  return `<div class="glass-field"><label for="pf-email-novo">E-mail</label>
+      <label class="field-wrap" for="pf-email-novo">${ic('mail')}<input id="pf-email-novo" type="email" value="${esc(CURRENT_EMAIL||'')}"></label></div>
+    <div class="glass-field"><label for="pf-email-senha">Senha atual (pra confirmar a troca)</label>
+      <label class="field-wrap" for="pf-email-senha">${ic('lock')}<input id="pf-email-senha" type="password" autocomplete="current-password"></label></div>
+    <button type="button" class="btn-pill btn-sm ghost" onclick="trocarEmail()">Salvar novo e-mail</button>
+    <p class="muted" style="font-size:11.5px;margin-top:8px;margin-bottom:16px;line-height:1.4">Você vai receber um link de confirmação no e-mail atual e no novo — a troca só vale depois de confirmar os dois.</p>
+
+    <div class="glass-field"><label for="pf-senha-atual">Senha atual</label>
+      <label class="field-wrap" for="pf-senha-atual">${ic('lock')}<input id="pf-senha-atual" type="password" autocomplete="current-password"></label></div>
+    <div class="glass-field"><label for="pf-senha-nova">Nova senha</label>
+      <label class="field-wrap" for="pf-senha-nova">${ic('lock')}<input id="pf-senha-nova" type="password" autocomplete="new-password"></label></div>
+    <div class="glass-field"><label for="pf-senha-confirma">Confirmar nova senha</label>
+      <label class="field-wrap" for="pf-senha-confirma">${ic('lock')}<input id="pf-senha-confirma" type="password" autocomplete="new-password"></label></div>
+    <button type="button" class="btn-pill btn-sm ghost" onclick="trocarSenha()">Salvar nova senha</button>`;
+}
 function configuracoesView(){
   const p=S.profile, ic=obIcon;
   const meds=['Ozempic','Wegovy','Mounjaro','Zepbound','Saxenda','Outro'];
@@ -1252,6 +1286,8 @@ function configuracoesView(){
     ${cfgGroup('Preferências',cfgPreferenciasSecao(p,ic))}
 
     <button class="btn-pill block" onclick="savePerfil()">Salvar alterações</button>
+
+    ${cfgGroup('Conta',cfgContaSecao(ic),'margin-top:14px')}
 
     ${cfgGroup('Notificações',cfgNotificacoesSecao(),'margin-top:14px')}
 
@@ -1384,6 +1420,84 @@ async function confirmarResetAll(){
   if(ACTIONPLAN) ACTIONPLAN.limparStatus();
   closeSheet();go('inicio');
 }
+/* Foto de perfil — diferente das fotos de evolução de peso
+   (S.weighings[].foto, locais, base64, nunca sincronizadas): o avatar
+   sobe de verdade pro bucket "avatars" do Supabase Storage (RLS:
+   cada usuário só escreve no próprio path), porque precisa aparecer
+   também pro profissional no Monity Pro. Path fixo por usuário
+   ({uid}/avatar.jpg, sempre jpeg, upsert:true) — assim "alterar foto"
+   nunca cria lixo de arquivos antigos com nomes diferentes. */
+function processAvatarFile(file,cb){
+  const max=320;
+  const r=new FileReader();
+  r.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{
+      let{width:w,height:h}=img;const sc=Math.min(1,max/Math.max(w,h));w*=sc;h*=sc;
+      const c=document.createElement('canvas');c.width=w;c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      c.toBlob(blob=>cb(blob),'image/jpeg',0.85);
+    };
+    img.src=e.target.result;
+  };
+  r.readAsDataURL(file);
+}
+async function uploadAvatarBlob(blob){
+  const supabase=await window.__supabaseReady;
+  const {data:{user}}=await supabase.auth.getUser();
+  if(!user) return {ok:false,error:'Sessão inválida. Faça login novamente.'};
+  const path=`${user.id}/avatar.jpg`;
+  const {error}=await supabase.storage.from('avatars').upload(path,blob,{upsert:true,contentType:'image/jpeg'});
+  if(error) return {ok:false,error:'Não foi possível enviar a foto.'};
+  const {data:pub}=supabase.storage.from('avatars').getPublicUrl(path);
+  return {ok:true,url:pub.publicUrl+'?t='+Date.now()}; // cache-bust, mesmo path é sempre reescrito
+}
+function onAvatarPicked(input){
+  const file=input.files[0]; if(!file) return;
+  const btn=document.getElementById('pf-avatar-btn');
+  if(btn){ btn.disabled=true; btn.textContent='Enviando…'; }
+  processAvatarFile(file,async blob=>{
+    const r=await uploadAvatarBlob(blob);
+    if(btn){ btn.disabled=false; btn.textContent='Alterar foto'; }
+    if(!r.ok){ toast(r.error); return; }
+    S.profile.avatarUrl=r.url; save(); toast('Foto atualizada'); render();
+  });
+}
+async function removerAvatar(){
+  const supabase=await window.__supabaseReady;
+  const {data:{user}}=await supabase.auth.getUser();
+  if(user) await supabase.storage.from('avatars').remove([`${user.id}/avatar.jpg`]);
+  S.profile.avatarUrl=null; save(); toast('Foto removida'); render();
+}
+
+/* E-mail e senha, estando logado — diferente do fluxo de "esqueci
+   minha senha" (link por e-mail, sem sessão ativa). Exige a senha
+   atual antes (reauthenticate(), js/auth.js), porque
+   supabase.auth.updateUser() não pede confirmação nenhuma sozinho. */
+async function trocarEmail(){
+  const novo=val('pf-email-novo'), senha=val('pf-email-senha');
+  if(!novo||!senha){ toast('Preencha o novo e-mail e sua senha atual'); return; }
+  const auth=await window.__authReady;
+  const r1=await auth.reauthenticate(senha);
+  if(!r1.ok){ toast(r1.error); return; }
+  const r2=await auth.updateEmail(novo);
+  if(!r2.ok){ toast(r2.error); return; }
+  const f=document.getElementById('pf-email-senha'); if(f) f.value='';
+  toast('Confirme a troca pelos links enviados ao e-mail atual e ao novo');
+}
+async function trocarSenha(){
+  const atual=val('pf-senha-atual'), nova=val('pf-senha-nova'), confirma=val('pf-senha-confirma');
+  if(!atual||!nova||!confirma){ toast('Preencha a senha atual, a nova senha e a confirmação'); return; }
+  if(nova.length<6){ toast('A nova senha precisa ter pelo menos 6 caracteres'); return; }
+  if(nova!==confirma){ toast('As senhas não coincidem'); return; }
+  const auth=await window.__authReady;
+  const r1=await auth.reauthenticate(atual);
+  if(!r1.ok){ toast(r1.error); return; }
+  const r2=await auth.updatePassword(nova);
+  if(!r2.ok){ toast(r2.error); return; }
+  ['pf-senha-atual','pf-senha-nova','pf-senha-confirma'].forEach(id=>{const f=document.getElementById(id); if(f) f.value='';});
+  toast('Senha alterada');
+}
 function excluirConta(){
   openSheet('confirmarExcluirConta');
 }
@@ -1471,6 +1585,8 @@ const OB_ICONS={
   target:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".6" fill="currentColor"/>',
   ruler:'<path d="M3 16.5 16.5 3l4.5 4.5L7.5 21z"/><path d="M14.5 5 16 6.5M11 8.5 12.5 10M7.5 12 9 13.5"/>',
   cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/>',
+  mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+  lock:'<rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
 };
 function obIcon(name){return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${OB_ICONS[name]||''}</svg>`;}
 const OB_CHEV_DOWN='<svg class="csel-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
@@ -2311,6 +2427,7 @@ function welcomeView(){
    ============================================================ */
 let AUTH_SCREEN='welcome'; // 'welcome' | 'login' | 'cadastro' | 'recuperar' | 'nova-senha'
 let AUTH_MSG=null; // mensagem de sucesso exibida no lugar do formulário (ex.: "confira seu e-mail")
+let CURRENT_EMAIL=null; // e-mail da sessão ativa, usado só pra exibir/pré-preencher em Configurações → Conta
 let OB_MARCO=null; // null (ainda não respondeu) | 'novo' | 'anterior' — Sprint 014, Marco Zero
 function obSetMarco(v){OB_MARCO=v;render();}
 
@@ -2623,6 +2740,7 @@ async function registrarListenerAuth(){
       if(event==='PASSWORD_RECOVERY'){ AUTH_MSG=null; AUTH_SCREEN='nova-senha'; renderWelcome(); }
       else if(event==='SIGNED_IN'){
         AUTH_SCREEN='welcome';
+        CURRENT_EMAIL=session&&session.user&&session.user.email;
         // splash até a promise de DB.setUser() resolver: é ela que decide
         // (migrateIfNeeded()) se o S atual pertence a esta conta ou
         // precisa ser zerado. Hoje essa decisão roda de forma síncrona na
@@ -2636,12 +2754,22 @@ async function registrarListenerAuth(){
         render();
       }
       else if(event==='SIGNED_OUT'){
-        AUTH_MSG=null; AUTH_SCREEN='welcome';
+        AUTH_MSG=null; AUTH_SCREEN='welcome'; CURRENT_EMAIL=null;
         if(DB) DB.setUser(null);
         // Auditoria Sprint 01, achado 18-1/9: sair da conta precisa zerar o
         // estado local — sem isso, ele fica em memória/localStorage até a
         // próxima conta logar e o merge do pullProfile() misturar os dois.
         limparEstadoLocal();
+        // Sprint 3.1 (auditoria K.1): as chaves abaixo não tinham userId
+        // embutido e só eram checadas/sobrescritas no PRÓXIMO login — entre
+        // um logout e outro login no mesmo aparelho, ficavam com resíduo da
+        // conta anterior (metadados de sync, flag de migração, dono salvo,
+        // licença, preferências/estado de notificação). Limpar aqui fecha o
+        // logout de verdade, em vez de depender só da detecção de troca de
+        // dono no próximo boot.
+        if(DB) DB.clearLocalCacheOnLogout();
+        if(LICENSE) LICENSE.limparCache();
+        if(NOTIF) NOTIF.limparCache();
         renderWelcome();
       }
     });
@@ -2668,6 +2796,7 @@ async function boot(){
     if(DB){
       const client = await window.__supabaseReady;
       const {data} = await client.auth.getSession();
+      CURRENT_EMAIL = data&&data.session&&data.session.user&&data.session.user.email;
       // mesmo motivo do SIGNED_IN em registrarListenerAuth(): esperar a
       // decisão de migrateIfNeeded() antes do render() abaixo, em vez de
       // depender do timing implícito de não haver await antes do branch

@@ -22,12 +22,12 @@ export default async function ProLayout({ children }: { children: React.ReactNod
 
   const { data: profile } = await supabase
     .from('professional_profiles')
-    .select('nome')
+    .select('nome, foto_url')
     .eq('id', user.id)
     .maybeSingle();
 
   return (
-    <ProShell nome={profile?.nome || user.email || 'Profissional'} workspaceName={workspace?.nome ?? 'Seu consultório'}>
+    <ProShell nome={profile?.nome || user.email || 'Profissional'} workspaceName={workspace?.nome ?? 'Seu consultório'} fotoUrl={profile?.foto_url}>
       {children}
     </ProShell>
   );

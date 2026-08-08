@@ -24,12 +24,12 @@ export function PatientTable({ pacientes }: { pacientes: PacienteDashboard[] }) 
     <div className="overflow-x-auto">
       <table className="w-full min-w-[560px] border-collapse text-sm">
         <thead>
-          <tr className="border-b border-slate-100 text-left text-xs font-semibold uppercase tracking-[.07em] text-ink-faint dark:border-white/5 dark:text-white/40">
-            <th className="pb-3 pr-4 font-semibold">Paciente</th>
-            <th className="pb-3 pr-4 font-semibold">Último registro</th>
-            <th className="pb-3 pr-4 font-semibold">Peso atual</th>
-            <th className="pb-3 pr-4 font-semibold">Evolução</th>
-            <th className="pb-3 font-semibold">Status</th>
+          <tr className="border-b border-slate-100 text-left text-[11px] font-semibold uppercase tracking-[.07em] text-ink-faint dark:border-white/5 dark:text-white/40">
+            <th className="pb-2 pr-4 font-semibold">Paciente</th>
+            <th className="pb-2 pr-4 font-semibold">Último registro</th>
+            <th className="pb-2 pr-4 font-semibold">Peso atual</th>
+            <th className="pb-2 pr-4 font-semibold">Evolução</th>
+            <th className="pb-2 font-semibold">Status</th>
           </tr>
         </thead>
         <tbody>
@@ -46,19 +46,19 @@ export function PatientTable({ pacientes }: { pacientes: PacienteDashboard[] }) 
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') abrir();
                 }}
-                className="animate-fade-in cursor-pointer border-b border-slate-50 transition-colors duration-150 ease-out last:border-0 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent dark:border-white/5 dark:hover:bg-white/5"
+                className="animate-fade-in cursor-pointer border-b border-slate-50 text-[13px] transition-colors duration-150 ease-out last:border-0 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent dark:border-white/5 dark:hover:bg-white/5"
               >
-                <td className="py-3 pr-4">
-                  <div className="flex items-center gap-2.5">
-                    <Avatar nome={p.nome} size={30} />
+                <td className="py-2 pr-4">
+                  <div className="flex items-center gap-2">
+                    <Avatar nome={p.nome} size={26} />
                     <span className="font-medium text-ink dark:text-white">{p.nome}</span>
                   </div>
                 </td>
-                <td className="py-3 pr-4 text-ink-soft dark:text-white/60">
+                <td className="py-2 pr-4 text-ink-soft dark:text-white/60">
                   {p.status === 'sem_dado' ? '—' : formatDate(p.ultimoRegistro)}
                 </td>
-                <td className="py-3 pr-4 text-ink dark:text-white">{p.pesoAtual != null ? `${p.pesoAtual} kg` : '—'}</td>
-                <td className="py-3 pr-4">
+                <td className="py-2 pr-4 text-ink dark:text-white">{p.pesoAtual != null ? `${p.pesoAtual} kg` : '—'}</td>
+                <td className="py-2 pr-4">
                   {p.evolucaoDesdeInicio != null ? (
                     <span className={p.evolucaoDesdeInicio >= 0 ? 'text-good' : 'text-danger'}>
                       {p.evolucaoDesdeInicio >= 0 ? '−' : '+'}
@@ -68,7 +68,7 @@ export function PatientTable({ pacientes }: { pacientes: PacienteDashboard[] }) 
                     <span className="text-ink-faint dark:text-white/40">—</span>
                   )}
                 </td>
-                <td className="py-3">
+                <td className="py-2">
                   <Badge tone={st.tone === 'neutral' ? 'neutral' : st.tone}>{st.label}</Badge>
                 </td>
               </tr>

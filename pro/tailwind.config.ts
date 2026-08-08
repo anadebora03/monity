@@ -58,6 +58,7 @@ const config: Config = {
         'card-dark': '0 1px 2px rgba(0,0,0,.2), 0 12px 32px rgba(0,0,0,.28)',
       },
       borderRadius: {
+        xs: '10px', // radius compacto — StatCards/badges na sprint de densidade (redesign premium)
         sm: '14px', // --rd-sm
         md: '20px', // --rd-md
         lg: '24px', // --rd-lg (pedido explícito: 20-24px nos cards)

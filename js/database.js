@@ -28,7 +28,7 @@ const COLLECTIONS = {
   agenda:       { table:'agenda',       cols:{tipo:'tipo',obs:'obs'} },
   bio:          { table:'bioimpedance', cols:{gordura:'gordura',massaMagraPct:'massa_magra',musculo:'musculo',agua:'agua',visceral:'visceral',tmb:'tmb'} },
 };
-const PROFILE_COLS = {nome:'nome',medicamento:'medicamento',doseAtual:'dose_atual',unidade:'unidade',diaAplicacao:'dia_aplicacao',dataInicio:'data_inicio',pesoInicial:'peso_inicial',pesoMeta:'peso_meta',altura:'altura',metaAgua:'meta_agua',metaProteina:'meta_proteina',historicalTreatment:'historical_treatment',historicalStartDate:'historical_start_date',historicalApplicationsCount:'historical_applications_count',monityStartDate:'monity_start_date',lastApplicationDate:'last_application_date'};
+const PROFILE_COLS = {nome:'nome',medicamento:'medicamento',doseAtual:'dose_atual',unidade:'unidade',diaAplicacao:'dia_aplicacao',dataInicio:'data_inicio',pesoInicial:'peso_inicial',pesoMeta:'peso_meta',altura:'altura',metaAgua:'meta_agua',metaProteina:'meta_proteina',historicalTreatment:'historical_treatment',historicalStartDate:'historical_start_date',historicalApplicationsCount:'historical_applications_count',monityStartDate:'monity_start_date',lastApplicationDate:'last_application_date',avatarUrl:'avatar_url'};
 const PEN_COLS = {capacidadeMg:'capacidade_mg',doseMg:'dose_mg',usadas:'usadas'};
 const DAILY_COLS = {agua:'agua',proteina:'proteina',humor:'humor',apetite:'apetite',fomeEmocional:'fome_emocional'};
 
@@ -438,7 +438,22 @@ function setUser(uid){
   return migrateIfNeeded().then(syncNow);
 }
 
-const dbApi = {init, onLocalSave, syncNow, setUser, setSyncAllowed, wipeServerData};
+/* Sprint 3.1 (auditoria K.1): antes disso, META_KEY/MIGRATED_KEY/
+   OWNER_KEY só eram checadas/sobrescritas no PRÓXIMO login
+   (migrateIfNeeded()) — entre um logout e o login seguinte, esses 3
+   resíduos da conta anterior ficavam no localStorage sem necessidade.
+   Chamada pelo handler SIGNED_OUT em app.js, junto das outras
+   limpezas (S, insights, actionplan) — fecha o logout de verdade em
+   vez de depender só da detecção de troca de dono no login seguinte. */
+function clearLocalCacheOnLogout(){
+  try{
+    localStorage.removeItem(META_KEY);
+    localStorage.removeItem(MIGRATED_KEY);
+    localStorage.removeItem(OWNER_KEY);
+  }catch(e){}
+}
+
+const dbApi = {init, onLocalSave, syncNow, setUser, setSyncAllowed, wipeServerData, clearLocalCacheOnLogout};
 
 if(window.__resolveDatabaseReady) window.__resolveDatabaseReady(dbApi);
 else window.__databaseReady = Promise.resolve(dbApi);

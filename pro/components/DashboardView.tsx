@@ -42,7 +42,7 @@ export function DashboardView({ nome, d }: { nome: string; d: DashboardData }) {
       <div className="mx-auto max-w-4xl px-8 py-10">
         <HeroCard>
           <p className="text-2xl font-bold tracking-[-0.02em] text-ink dark:text-white">
-            {saudacao()}, {nome} 👋
+            {saudacao()}, {nome}
           </p>
           <p className="mt-1.5 text-sm text-ink-soft dark:text-white/60">Seu ambiente foi criado com sucesso.</p>
         </HeroCard>
@@ -66,18 +66,18 @@ export function DashboardView({ nome, d }: { nome: string; d: DashboardData }) {
   const prioritariosCount = d.prioridades.pacientes.length;
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-10 sm:px-8">
+    <div className="mx-auto max-w-5xl px-6 py-7 sm:px-8">
       {/* 1. Cabeçalho inteligente */}
       <div className="animate-fade-in">
-        <h1 className="text-2xl font-bold tracking-[-0.02em] text-ink dark:text-white">
+        <h1 className="text-xl font-bold tracking-[-0.02em] text-ink dark:text-white">
           {saudacao()}, {nome}.
         </h1>
         {bullets.length > 0 ? (
-          <div className="mt-2.5">
-            <p className="text-sm text-ink-soft dark:text-white/60">Hoje você possui:</p>
-            <ul className="mt-1.5 space-y-1">
+          <div className="mt-1.5">
+            <p className="text-[13px] text-ink-soft dark:text-white/60">Hoje você possui:</p>
+            <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5">
               {bullets.map((b, i) => (
-                <li key={i} className="flex items-center gap-2 text-sm font-semibold text-ink dark:text-white">
+                <li key={i} className="flex items-center gap-1.5 text-[13px] font-semibold text-ink dark:text-white">
                   <span className="text-accent dark:text-accent-light">•</span>
                   {b}
                 </li>
@@ -85,12 +85,12 @@ export function DashboardView({ nome, d }: { nome: string; d: DashboardData }) {
             </ul>
           </div>
         ) : (
-          <p className="mt-1.5 text-sm text-ink-soft dark:text-white/60">Tudo sob controle hoje. Nenhum paciente necessita intervenção imediata.</p>
+          <p className="mt-1.5 text-[13px] text-ink-soft dark:text-white/60">Tudo sob controle hoje. Nenhum paciente necessita intervenção imediata.</p>
         )}
       </div>
 
       {/* 2. Indicadores principais — só três, nada compete por atenção */}
-      <div className="mt-7 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <StatCard
           icon={Users}
           label="Pacientes"
@@ -113,81 +113,81 @@ export function DashboardView({ nome, d }: { nome: string; d: DashboardData }) {
       </div>
 
       {/* 3. Pacientes Prioritários — o centro da experiência */}
-      <div className="mt-8">
+      <div className="mt-5">
         <PriorityPatientsCard pacientes={d.prioridades.pacientes} />
       </div>
 
       {/* 4. Agenda de hoje */}
-      <Card className="mt-6 animate-fade-in">
-        <div className="mb-3 flex items-center justify-between">
-          <p className="text-xs font-semibold uppercase tracking-[.09em] text-ink-faint dark:text-white/40">Agenda de hoje</p>
+      <Card className="mt-4 animate-fade-in">
+        <div className="mb-2.5 flex items-center justify-between">
+          <p className="text-[11px] font-semibold uppercase tracking-[.09em] text-ink-faint dark:text-white/40">Agenda de hoje</p>
           <Link href="/pro/agenda" className="text-xs font-medium text-accent hover:underline dark:text-accent-light">
             Ver agenda
           </Link>
         </div>
         {d.agendaHoje.length > 0 ? (
-          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
             {d.agendaHoje.map((a, i) => (
-              <li key={i} className="flex items-baseline gap-2 text-sm">
-                <span className="w-10 shrink-0 font-semibold text-accent dark:text-accent-light">{a.hora ? a.hora.slice(0, 5) : '—'}</span>
+              <li key={i} className="flex items-baseline gap-2 text-[13px]">
+                <span className="w-9 shrink-0 font-semibold text-accent dark:text-accent-light">{a.hora ? a.hora.slice(0, 5) : '—'}</span>
                 <div className="min-w-0">
                   <p className="truncate font-medium text-ink dark:text-white">{a.pacienteNome}</p>
-                  <p className="text-ink-faint dark:text-white/40">{a.tipo}</p>
+                  <p className="text-[11.5px] text-ink-faint dark:text-white/40">{a.tipo}</p>
                 </div>
               </li>
             ))}
           </ul>
         ) : (
-          <div className="flex flex-col items-center py-6 text-center">
-            <Compass size={22} strokeWidth={1.8} className="text-ink-faint dark:text-white/30" />
-            <p className="mt-2 text-sm text-ink-faint dark:text-white/40">Nenhum compromisso hoje.</p>
+          <div className="flex flex-col items-center py-4 text-center">
+            <Compass size={20} strokeWidth={1.8} className="text-ink-faint dark:text-white/30" />
+            <p className="mt-1.5 text-[13px] text-ink-faint dark:text-white/40">Nenhum compromisso hoje.</p>
           </div>
         )}
       </Card>
 
       {/* 5. Pacientes recentes — secundário, peso visual reduzido */}
-      <div className="mt-6">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-[.09em] text-ink-faint dark:text-white/40">Pacientes recentes</p>
-        <div className="rounded-lg border border-slate-100 bg-white p-5 dark:border-white/5 dark:bg-navy-soft/60">
+      <div className="mt-4">
+        <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[.09em] text-ink-faint dark:text-white/40">Pacientes recentes</p>
+        <Card className="p-4">
           <PatientTable pacientes={d.pacientes.slice(0, 6)} />
-        </div>
+        </Card>
       </div>
 
       {/* 6. Insights clínicos — secundário */}
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="rounded-lg border border-slate-100 bg-white p-5 dark:border-white/5 dark:bg-navy-soft/60">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[.09em] text-ink-faint dark:text-white/40">Insights</p>
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <Card className="p-4">
+          <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[.09em] text-ink-faint dark:text-white/40">Insights</p>
           {d.insights.length > 0 ? (
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               {d.insights.map((ins, i) => (
                 <InsightCard key={i} {...ins} />
               ))}
             </div>
           ) : (
-            <p className="text-sm text-ink-faint dark:text-white/40">Nenhum insight novo por enquanto.</p>
+            <p className="text-[13px] text-ink-faint dark:text-white/40">Nenhum insight novo por enquanto.</p>
           )}
-        </div>
+        </Card>
 
-        <div className="rounded-lg border border-slate-100 bg-white p-5 dark:border-white/5 dark:bg-navy-soft/60">
-          <div className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[.09em] text-ink-faint dark:text-white/40">
-            <ClipboardList size={13} strokeWidth={2} />
+        <Card className="p-4">
+          <div className="mb-2.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[.09em] text-ink-faint dark:text-white/40">
+            <ClipboardList size={12} strokeWidth={2} />
             Planos terapêuticos
           </div>
           <div className="grid grid-cols-3 gap-2 text-center">
             <div>
-              <p className="text-lg font-bold text-ink dark:text-white">{d.planoTerapeutico.pendentes}</p>
-              <p className="text-[11px] text-ink-faint dark:text-white/40">Pendentes</p>
+              <p className="text-base font-bold text-ink dark:text-white">{d.planoTerapeutico.pendentes}</p>
+              <p className="text-[10.5px] text-ink-faint dark:text-white/40">Pendentes</p>
             </div>
             <div>
-              <p className="text-lg font-bold text-good">{d.planoTerapeutico.concluidos}</p>
-              <p className="text-[11px] text-ink-faint dark:text-white/40">Concluídos</p>
+              <p className="text-base font-bold text-good">{d.planoTerapeutico.concluidos}</p>
+              <p className="text-[10.5px] text-ink-faint dark:text-white/40">Concluídos</p>
             </div>
             <div>
-              <p className={`text-lg font-bold ${d.planoTerapeutico.emAtraso > 0 ? 'text-danger' : 'text-ink dark:text-white'}`}>{d.planoTerapeutico.emAtraso}</p>
-              <p className="text-[11px] text-ink-faint dark:text-white/40">Em atraso</p>
+              <p className={`text-base font-bold ${d.planoTerapeutico.emAtraso > 0 ? 'text-danger' : 'text-ink dark:text-white'}`}>{d.planoTerapeutico.emAtraso}</p>
+              <p className="text-[10.5px] text-ink-faint dark:text-white/40">Em atraso</p>
             </div>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );

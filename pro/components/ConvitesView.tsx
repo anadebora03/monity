@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Mail, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -8,7 +9,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/ui/Avatar';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { InviteModal } from '@/components/InviteModal';
-import type { Convite } from '@/lib/invites';
+import { cancelarConvite, type Convite } from '@/lib/invites';
 
 const STATUS: Record<Convite['status'], { label: string; tone: 'good' | 'warn' | 'danger' | 'neutral' }> = {
   pending: { label: 'Pendente', tone: 'warn' },
@@ -22,7 +23,16 @@ function formatDate(iso: string) {
 }
 
 export function ConvitesView({ convites }: { convites: Convite[] }) {
+  const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
+  const [cancelando, setCancelando] = useState<string | null>(null);
+
+  async function cancelar(id: string) {
+    setCancelando(id);
+    await cancelarConvite(id);
+    setCancelando(null);
+    router.refresh();
+  }
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-10 sm:px-8">
@@ -63,6 +73,15 @@ export function ConvitesView({ convites }: { convites: Convite[] }) {
                     </p>
                   </div>
                   <Badge tone={st.tone}>{st.label}</Badge>
+                  {c.status === 'pending' && (
+                    <button
+                      onClick={() => cancelar(c.id)}
+                      disabled={cancelando === c.id}
+                      className="text-xs font-medium text-ink-faint transition hover:text-danger disabled:opacity-50 dark:text-white/40"
+                    >
+                      {cancelando === c.id ? 'Cancelando…' : 'Cancelar'}
+                    </button>
+                  )}
                 </li>
               );
             })}

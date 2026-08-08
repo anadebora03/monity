@@ -231,7 +231,15 @@ function cancel(key){
 function cancelAplicacaoHoje(){ cancel(`aplicacao-${todayISO()}`); }
 function cancelPesagemHoje(){ cancel(`pesagem-${todayISO()}`); }
 
-const notifApi = {checkAndNotify, listarElegiveis, requestPermission, cancel, cancelAplicacaoHoje, cancelPesagemHoje, loadPrefs, savePrefs, get permission(){ return typeof Notification!=='undefined'?Notification.permission:'unsupported'; }};
+/* Sprint 3.1 (auditoria K.1): prefs/estado de notificação não têm
+   userId embutido — sem isso, os toggles e o dedup de "já mostrado
+   hoje" da conta anterior vazariam pra próxima conta no mesmo
+   aparelho. Chamada pelo handler SIGNED_OUT em app.js. */
+function limparCache(){
+  try{ localStorage.removeItem(PREFS_KEY); localStorage.removeItem(STATE_KEY); }catch(e){}
+}
+
+const notifApi = {checkAndNotify, listarElegiveis, requestPermission, cancel, cancelAplicacaoHoje, cancelPesagemHoje, loadPrefs, savePrefs, limparCache, get permission(){ return typeof Notification!=='undefined'?Notification.permission:'unsupported'; }};
 
 if(window.__resolveNotificationsReady) window.__resolveNotificationsReady(notifApi);
 else window.__notificationsReady = Promise.resolve(notifApi);

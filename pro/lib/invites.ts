@@ -33,6 +33,20 @@ export async function criarConvite(nome: string, email: string) {
   const { data: workspace } = await supabase.from('workspaces').select('id').eq('owner_id', user.id).maybeSingle();
   if (!workspace) return { ok: false as const, error: 'Workspace não encontrado.' };
 
+  // Sprint 3.2 (item 15 — impedir duplicidade): sem isso, convidar o
+  // mesmo e-mail duas vezes criava dois convites "pending" em paralelo
+  // — nenhum dos dois é tecnicamente um vínculo ainda, então o índice
+  // único de patient_relationships (que só vale a partir de
+  // status='active') não pegava esse caso.
+  const { data: pendente } = await supabase
+    .from('patient_relationships')
+    .select('id')
+    .eq('workspace_id', workspace.id)
+    .eq('patient_email', email)
+    .eq('status', 'pending')
+    .maybeSingle();
+  if (pendente) return { ok: false as const, error: 'Já existe um convite pendente para este e-mail.' };
+
   // colisão de 12 bytes aleatórios é astronomicamente improvável, mas o
   // índice único garante que nunca duplicaria silenciosamente mesmo assim —
   // uma tentativa extra é a resposta correta e barata pra esse caso raro.
@@ -52,6 +66,30 @@ export async function criarConvite(nome: string, email: string) {
     }
   }
   return { ok: false as const, error: 'Não foi possível gerar um código único. Tente novamente.' };
+}
+
+/* Cancelar convite pendente (Sprint 3.2, item 14) — mesmo mecanismo
+   de encerrarAcompanhamento (pro/app/pro/pacientes/[id]/actions.ts):
+   a policy "update_linked" só aceita UPDATE quando o resultado final
+   é status='ended', então cancelar um convite e encerrar um vínculo
+   ativo usam exatamente a mesma trava de RLS. O filtro
+   .eq('status','pending') aqui é só pra não deixar cancelar por
+   engano um convite que já foi aceito/recusado. */
+export async function cancelarConvite(id: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false as const, error: 'Não autenticado.' };
+
+  const { error } = await supabase
+    .from('patient_relationships')
+    .update({ status: 'ended', ended_at: new Date().toISOString(), ended_reason: 'Convite cancelado pelo profissional' })
+    .eq('id', id)
+    .eq('status', 'pending');
+
+  if (error) return { ok: false as const, error: 'Não foi possível cancelar o convite. Tente novamente.' };
+  return { ok: true as const };
 }
 
 export async function listarConvites(): Promise<Convite[]> {
