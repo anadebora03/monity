@@ -63,6 +63,19 @@ const REPORT_WD = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 
 function reportSortedByDate(arr) {
   return [...arr].sort((a, b) => (a.date < b.date ? -1 : 1));
 }
+/* Último peso conhecido em ou antes de `dateISO`, dentro do histórico
+   COMPLETO (não só o recorte do período) — nunca "o primeiro peso
+   registrado dentro do período" (que ignoraria pesagens anteriores ao
+   período, a causa real do bug de "peso inicial do período" incoerente
+   com o dashboard) nem "o peso mais antigo já registrado" (o fallback
+   antigo, que podia pegar um valor de meses antes do período, sem
+   relação nenhuma com a data pedida). `sortedAllW` já vem ordenado
+   ascendente (reportSortedByDate). */
+function reportWeightAtOrBefore(sortedAllW, dateISO) {
+  let found = null;
+  for (const w of sortedAllW) { if (w.date <= dateISO) found = w; else break; }
+  return found;
+}
 function reportCurrentWeight(weighings, profile) {
   const w = reportSortedByDate(weighings);
   return w.length ? w[w.length - 1].peso : profile.pesoInicial;
@@ -141,8 +154,21 @@ function reportColetaDados(data, ini, fim) {
   const examsP = (exams || []).filter((x) => inRange(x.date));
 
   const allW = reportSortedByDate(weighings);
-  const pesoIniPeriod = w.length ? w[0].peso : allW.length ? allW[0].peso : profile.pesoInicial;
-  const pesoFimPeriod = w.length ? w[w.length - 1].peso : reportCurrentWeight(weighings, profile);
+  /* peso inicial do período: último peso conhecido em ou antes de `ini`
+     (histórico completo, não só dentro do recorte) — fallback legítimo
+     e único é o peso inicial do TRATAMENTO, quando não existe nenhuma
+     pesagem anterior ao período. Nunca "primeiro peso dentro do
+     período" nem "peso mais antigo já registrado" (bug anterior: podia
+     devolver uma pesagem de meses antes do período, sem relação com a
+     data pedida). */
+  const pesoIniPeriodReg = reportWeightAtOrBefore(allW, ini);
+  const pesoIniPeriod = pesoIniPeriodReg ? pesoIniPeriodReg.peso : profile.pesoInicial;
+  /* peso atual do período: último peso conhecido em ou antes de `fim`
+     — nunca o peso mais recente do perfil se ele foi registrado DEPOIS
+     da data final do relatório (relatórios históricos não podem usar
+     dado do futuro em relação ao próprio período). */
+  const pesoFimPeriodReg = reportWeightAtOrBefore(allW, fim);
+  const pesoFimPeriod = pesoFimPeriodReg ? pesoFimPeriodReg.peso : pesoIniPeriod;
   const varPeso = +(pesoFimPeriod - pesoIniPeriod).toFixed(1);
 
   const diasAgua = logs.filter((l) => l.agua > 0);
