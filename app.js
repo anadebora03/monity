@@ -42,11 +42,19 @@ function persistLocal(){
    (insights, actionplan) — usado tanto no logout (SIGNED_OUT) quanto
    na troca de dono detectada por migrateIfNeeded() (resetLocal()),
    pra essas duas chaves nunca vazarem de uma conta pra outra no mesmo
-   dispositivo em nenhum dos dois caminhos. */
+   dispositivo em nenhum dos dois caminhos.
+   closeSheet(): o backdrop do sheet (#bd) vive fora de #app, então
+   render()/renderWelcome() não o remove sozinho — sem isso, sair da
+   conta com "Configurações" aberta (ex.: clicar em "Sair da conta"
+   dentro do próprio sheet) deixava o sheet antigo sobreposto na tela
+   de boas-vindas já limpa por trás (achado do QA da Sprint 02: não é
+   vazamento de dado, já que o conteúdo por trás está correto, mas é
+   uma tela travada). */
 function limparEstadoLocal(){
   S=null; persistLocal();
   if(INSIGHTS) INSIGHTS.limparHistorico();
   if(ACTIONPLAN) ACTIONPLAN.limparStatus();
+  closeSheet();
 }
 function save(){
   persistLocal();
