@@ -1459,7 +1459,9 @@ function obView(){
           <label class="field-wrap" for="o-pmeta">${ic('target')}<input id="o-pmeta" inputmode="decimal" placeholder="ex: 72"></label></div>
       </div>
       ${anterior?`<div class="glass-field"><label for="o-atual">Peso atual (kg)</label>
-        <label class="field-wrap" for="o-atual">${ic('scale')}<input id="o-atual" inputmode="decimal" placeholder="ex: 89"></label></div>`:''}
+        <label class="field-wrap" for="o-atual">${ic('scale')}<input id="o-atual" inputmode="decimal" placeholder="ex: 89"></label></div>
+      <div class="glass-field"><label for="o-napl">Quantas aplicações você já realizou até hoje?</label>
+        <label class="field-wrap" for="o-napl">${ic('pill')}<input id="o-napl" inputmode="numeric" placeholder="ex: 8"></label></div>`:''}
       <div class="glass-field-2 asym">
         <div class="glass-field"><label for="o-alt">Altura (cm)</label>
           <label class="field-wrap" for="o-alt">${ic('ruler')}<input id="o-alt" inputmode="numeric" placeholder="ex: 165"></label></div>
@@ -1566,11 +1568,16 @@ function startNew(){
   const anterior=OB_MARCO==='anterior';
   const pini=numBR(val('o-pini')), pmeta=numBR(val('o-pmeta')), alt=parseInt(val('o-alt'));
   const atual=anterior?numBR(val('o-atual')):null;
+  const dataInicio=val('o-data')||todayISO();
   if(!pini||!pmeta||!alt){toast('Preencha peso inicial, meta e altura');return;}
   if(anterior&&!atual){toast('Preencha seu peso atual');return;}
+  if(anterior&&!dataInicio){toast('Preencha a data de início do tratamento');return;}
+  const napl=anterior?parseInt(val('o-napl')):null;
   const p={nome,medicamento:val('o-med'),doseAtual:val('o-dose')||'—',unidade:'mg',
-    diaAplicacao:parseInt(val('o-dia')),dataInicio:val('o-data')||todayISO(),
-    pesoInicial:pini,pesoMeta:pmeta,altura:alt,metaAgua:3,metaProteina:100};
+    diaAplicacao:parseInt(val('o-dia')),dataInicio,
+    pesoInicial:pini,pesoMeta:pmeta,altura:alt,metaAgua:3,metaProteina:100,
+    historicalTreatment:anterior,historicalStartDate:anterior?dataInicio:null,
+    historicalApplicationsCount:(anterior&&napl>0)?napl:null};
   S=blankState(p,anterior?{date:todayISO(),peso:atual}:null);save();go('inicio');
 }
 function startExample(){S=seedExample();save();toast('Dados de exemplo carregados');go('inicio');}
@@ -2411,6 +2418,9 @@ async function initDatabase(){
     if(DB) DB.init({
       getState:()=>S,
       applyRemote:(mutate)=>{ S=mutate(S); persistLocal(); render(); },
+      // dispositivo reaproveitado por outra conta: descarta o estado local
+      // residual (nunca era dela) em vez de deixar migrateIfNeeded() herdá-lo
+      resetLocal:()=>{ S=null; persistLocal(); render(); },
     });
   }catch(e){
     console.error('[Sync] erro ao inicializar camada de dados:', e);

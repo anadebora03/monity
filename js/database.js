@@ -14,6 +14,7 @@ import { supabase } from './supabase.js';
 
 const META_KEY = 'compasso_sync_meta_v1';
 const MIGRATED_KEY = 'compasso_migrated_v1';
+const OWNER_KEY = 'compasso_local_owner_v1';
 const DEBOUNCE_MS = 1500;
 
 /* ---------- mapeamento coleção local (S) <-> tabela remota ---------- */
@@ -27,7 +28,7 @@ const COLLECTIONS = {
   agenda:       { table:'agenda',       cols:{tipo:'tipo',obs:'obs'} },
   bio:          { table:'bioimpedance', cols:{gordura:'gordura',massaMagraPct:'massa_magra',musculo:'musculo',agua:'agua',visceral:'visceral',tmb:'tmb'} },
 };
-const PROFILE_COLS = {nome:'nome',medicamento:'medicamento',doseAtual:'dose_atual',unidade:'unidade',diaAplicacao:'dia_aplicacao',dataInicio:'data_inicio',pesoInicial:'peso_inicial',pesoMeta:'peso_meta',altura:'altura',metaAgua:'meta_agua',metaProteina:'meta_proteina'};
+const PROFILE_COLS = {nome:'nome',medicamento:'medicamento',doseAtual:'dose_atual',unidade:'unidade',diaAplicacao:'dia_aplicacao',dataInicio:'data_inicio',pesoInicial:'peso_inicial',pesoMeta:'peso_meta',altura:'altura',metaAgua:'meta_agua',metaProteina:'meta_proteina',historicalTreatment:'historical_treatment',historicalStartDate:'historical_start_date',historicalApplicationsCount:'historical_applications_count'};
 const PEN_COLS = {capacidadeMg:'capacidade_mg',doseMg:'dose_mg',usadas:'usadas'};
 const DAILY_COLS = {agua:'agua',proteina:'proteina',humor:'humor',apetite:'apetite',fomeEmocional:'fome_emocional'};
 
@@ -291,13 +292,26 @@ async function migrateIfNeeded(){
   if(error) return; // sem rede/erro: tenta de novo no próximo boot, não bloqueia o app
   if(count && count > 0){
     // já existe conta com dados no servidor (login em outro dispositivo, ou já migrado antes) — não migra, só sincroniza normalmente
-    try{ localStorage.setItem(MIGRATED_KEY, userId); }catch(e){}
+    try{ localStorage.setItem(MIGRATED_KEY, userId); localStorage.setItem(OWNER_KEY, userId); }catch(e){}
+    return;
+  }
+  // servidor vazio para este usuário: só migra o S local se ele realmente
+  // pertence a este usuário (mesmo dono já gravado antes, ou nenhum dono
+  // gravado ainda — primeiro uso do dispositivo). Sem essa checagem, um
+  // dispositivo reaproveitado (outra conta, dado de exemplo, teste
+  // anterior) vazaria seu estado local para o próximo usuário que logar
+  // nele, já que logout nunca limpa o localStorage (ver setUser()).
+  let owner = null;
+  try{ owner = localStorage.getItem(OWNER_KEY); }catch(e){}
+  if(owner && owner !== userId){
+    if(host && host.resetLocal) host.resetLocal();
+    try{ localStorage.setItem(MIGRATED_KEY, userId); localStorage.setItem(OWNER_KEY, userId); }catch(e){}
     return;
   }
   const S = host.getState();
-  if(!S || !S.profile) return; // usuário ainda não passou pelo onboarding local — nada para migrar
+  if(!S || !S.profile){ try{ localStorage.setItem(OWNER_KEY, userId); }catch(e){} return; } // usuário ainda não passou pelo onboarding local — nada para migrar
   await withSyncLock(pushAll);
-  try{ localStorage.setItem(MIGRATED_KEY, userId); }catch(e){}
+  try{ localStorage.setItem(MIGRATED_KEY, userId); localStorage.setItem(OWNER_KEY, userId); }catch(e){}
 }
 
 /* ---------- orquestração ----------
@@ -326,8 +340,8 @@ function onLocalSave(){
 }
 
 let listenersBound = false;
-function init({getState, applyRemote}){
-  host = {getState, applyRemote};
+function init({getState, applyRemote, resetLocal}){
+  host = {getState, applyRemote, resetLocal};
   if(!listenersBound){
     listenersBound = true;
     window.addEventListener('online', syncNow);
