@@ -159,10 +159,16 @@ create table if not exists pens (
 -- funcionalidade nova justificar um índice, ele entra numa
 -- migração específica quando essa funcionalidade existir.
 --
--- weighings/daily_logs/bioimpedance/pens: o índice único (parcial,
--- onde deleted_at é nulo) já cobre sozinho toda busca por
--- (user_id, date) ou (user_id) nas linhas ativas — não há índice
--- comum adicional.
+-- weighings/bioimpedance/pens: o índice único (parcial, onde
+-- deleted_at é nulo) já cobre sozinho toda busca por (user_id, date)
+-- ou (user_id) nas linhas ativas — não há índice comum adicional.
+-- daily_logs é diferente: pushDailyLogs() faz upsert por
+-- (user_id, date) via ON CONFLICT, que exige um índice único NÃO
+-- PARCIAL nessas colunas (Postgres não aceita ON CONFLICT contra um
+-- índice parcial sem repetir a mesma cláusula WHERE, que o
+-- Supabase-js não permite especificar) — por isso o índice de
+-- daily_logs não tem a condição `where deleted_at is null` que os
+-- outros três têm.
 -- applications/exams/agenda: sem índice único (o app permite mais
 -- de um registro por dia); mantido só o índice de sincronização.
 -- profiles/pens: pullProfile()/pullPen() buscam sempre a única
@@ -177,7 +183,7 @@ create unique index if not exists uq_weighings_user_date on weighings (user_id, 
 create index if not exists idx_applications_user_updated on applications (user_id, updated_at);
 
 create index if not exists idx_daily_logs_user_updated on daily_logs (user_id, updated_at);
-create unique index if not exists uq_daily_logs_user_date on daily_logs (user_id, date) where deleted_at is null;
+create unique index if not exists uq_daily_logs_user_date on daily_logs (user_id, date);
 
 create index if not exists idx_exams_user_updated on exams (user_id, updated_at);
 
