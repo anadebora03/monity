@@ -443,7 +443,14 @@ function listarHistorico(){
     .sort((a,b)=>a.data<b.data?1:-1);
 }
 
-const insightsApi = {gerar, listarHistorico, totalRegras:RULES.length};
+/* Auditoria Sprint 01 (isolamento de dados): o histórico de insights não
+   tem user_id — é só localStorage. Numa troca de conta no mesmo
+   dispositivo, precisa ser limpo junto com o resto do estado local, ou
+   o histórico de A "engana" o motor achando que uma tendência de B já
+   apareceu antes. */
+function limparHistorico(){ try{ localStorage.removeItem(HISTORICO_KEY); }catch(e){} }
+
+const insightsApi = {gerar, listarHistorico, limparHistorico, totalRegras:RULES.length};
 
 if(window.__resolveInsightsReady) window.__resolveInsightsReady(insightsApi);
 else window.__insightsReady = Promise.resolve(insightsApi);

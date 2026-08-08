@@ -226,7 +226,13 @@ function listarResolvidas(){
     .sort((a,b)=>a.data<b.data?1:-1);
 }
 
-const actionplanApi = {gerar, atualizarStatus, listarResolvidas};
+/* Auditoria Sprint 01 (isolamento de dados): status manual (nova/em
+   acompanhamento/resolvida) também é só localStorage, sem user_id — na
+   troca de conta precisa ser limpo, ou um item "resolvido" por A pode
+   suprimir indevidamente um alerta genuíno de B. */
+function limparStatus(){ try{ localStorage.removeItem(STATUS_KEY); }catch(e){} }
+
+const actionplanApi = {gerar, atualizarStatus, listarResolvidas, limparStatus};
 
 if(window.__resolveActionplanReady) window.__resolveActionplanReady(actionplanApi);
 else window.__actionplanReady = Promise.resolve(actionplanApi);

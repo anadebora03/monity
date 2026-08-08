@@ -129,7 +129,11 @@ async function pushProfile(){
   const fingerprint = JSON.stringify(S.profile);
   const known = meta.profile;
   if(known && known.fp === fingerprint) return;
-  const row = {id:userId, ...toRow(PROFILE_COLS, S.profile)};
+  // deleted_at:null explícito — reviver a linha se ela tiver sido
+  // soft-deletada por wipeServerData() ("Começar novamente", Auditoria
+  // Sprint 01); sem isso, o próximo pullProfile() (que agora filtra
+  // deleted_at) nunca mais encontraria essa conta.
+  const row = {id:userId, ...toRow(PROFILE_COLS, S.profile), deleted_at:null};
   const mapRow = full=>fromRow(PROFILE_COLS, full);
   const result = await pushRecord('profiles', {id:userId}, row, fingerprint, known, mapRow);
   if(!result) return;
@@ -227,7 +231,10 @@ async function pullCollection(name){
   saveMeta(meta);
 }
 async function pullProfile(){
-  const {data, error} = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+  // .is('deleted_at', null): mesmo filtro já usado por toda pullCollection()/
+  // pullPen()/pullDailyLogs() — sem ele, um perfil soft-deletado por
+  // wipeServerData() ("Começar novamente") voltaria a ser lido como válido.
+  const {data, error} = await supabase.from('profiles').select('*').eq('id', userId).is('deleted_at', null).maybeSingle();
   if(error || !data) return;
   const meta = loadMeta();
   host.applyRemote(S=>{
@@ -287,6 +294,20 @@ async function pullAll(){
 /* ---------- migração automática (primeiro login com banco vazio) ---------- */
 async function migrateIfNeeded(){
   if(!userId || !syncAllowed) return;
+  // dispositivo reaproveitado por outra conta: descarta o estado local
+  // residual (nunca era desta conta) ANTES de qualquer outra decisão —
+  // não só quando o servidor está vazio (Auditoria Sprint 01, achado
+  // 18-3: bastava a conta nova já ter dado no servidor pra pular direto
+  // pro merge do pullProfile() por cima do estado antigo, sem nunca
+  // zerar S primeiro).
+  let owner = null;
+  try{ owner = localStorage.getItem(OWNER_KEY); }catch(e){}
+  if(owner && owner !== userId){
+    if(host && host.resetLocal) host.resetLocal();
+    try{ localStorage.setItem(OWNER_KEY, userId); localStorage.removeItem(MIGRATED_KEY); }catch(e){}
+    return; // nada a migrar: acabamos de zerar S; pullAll() (syncNow(), chamado
+            // em seguida por setUser()) traz o que existir no servidor pra esta conta
+  }
   try{ if(localStorage.getItem(MIGRATED_KEY) === userId) return; }catch(e){}
   const {count, error} = await supabase.from('profiles').select('id', {count:'exact', head:true}).eq('id', userId);
   if(error) return; // sem rede/erro: tenta de novo no próximo boot, não bloqueia o app
@@ -295,23 +316,46 @@ async function migrateIfNeeded(){
     try{ localStorage.setItem(MIGRATED_KEY, userId); localStorage.setItem(OWNER_KEY, userId); }catch(e){}
     return;
   }
-  // servidor vazio para este usuário: só migra o S local se ele realmente
-  // pertence a este usuário (mesmo dono já gravado antes, ou nenhum dono
-  // gravado ainda — primeiro uso do dispositivo). Sem essa checagem, um
-  // dispositivo reaproveitado (outra conta, dado de exemplo, teste
-  // anterior) vazaria seu estado local para o próximo usuário que logar
-  // nele, já que logout nunca limpa o localStorage (ver setUser()).
-  let owner = null;
-  try{ owner = localStorage.getItem(OWNER_KEY); }catch(e){}
-  if(owner && owner !== userId){
-    if(host && host.resetLocal) host.resetLocal();
-    try{ localStorage.setItem(MIGRATED_KEY, userId); localStorage.setItem(OWNER_KEY, userId); }catch(e){}
-    return;
-  }
   const S = host.getState();
   if(!S || !S.profile){ try{ localStorage.setItem(OWNER_KEY, userId); }catch(e){} return; } // usuário ainda não passou pelo onboarding local — nada para migrar
   await withSyncLock(pushAll);
   try{ localStorage.setItem(MIGRATED_KEY, userId); localStorage.setItem(OWNER_KEY, userId); }catch(e){}
+}
+
+/* ---------- reset real ("Começar novamente") ----------
+   Auditoria Sprint 01, achado 18-1: confirmarResetAll() (app.js) só
+   limpava o estado local — o Supabase nunca era tocado, então o próximo
+   syncNow() trazia tudo de volta. Soft-delete (deleted_at) em todas as
+   tabelas do usuário, reaproveitando exatamente o mecanismo já usado
+   pra sincronização incremental (pullCollection()/pullPen()/
+   pullDailyLogs() já ignoram deleted_at!=null) — só profiles precisou
+   ganhar o mesmo filtro (ver pullProfile()). Não precisa de policy de
+   DELETE nova: é um UPDATE, e "update_own" já autoriza o dono a
+   escrever deleted_at nas próprias linhas. Melhor esforço, mesmo
+   princípio de sincronização silenciosa quando offline já documentado
+   no topo do arquivo — se falhar, o estado local ainda é limpo. */
+async function wipeServerData(){
+  if(!userId) return false;
+  const nowISO = new Date().toISOString();
+  let ok = true;
+  try{
+    const ops = Object.values(COLLECTIONS).map(cfg=>
+      supabase.from(cfg.table).update({deleted_at:nowISO}).eq('user_id', userId).is('deleted_at', null));
+    ops.push(supabase.from('pens').update({deleted_at:nowISO}).eq('user_id', userId).is('deleted_at', null));
+    ops.push(supabase.from('daily_logs').update({deleted_at:nowISO}).eq('user_id', userId).is('deleted_at', null));
+    ops.push(supabase.from('profiles').update({deleted_at:nowISO}).eq('id', userId).is('deleted_at', null));
+    const results = await Promise.all(ops);
+    ok = results.every(r=>!r.error);
+  }catch(e){
+    console.error('[Sync] wipeServerData falhou (melhor esforço):', e);
+    ok = false;
+  }
+  // limpa o rastro de sincronização local mesmo se o wipe do servidor
+  // falhar parcialmente (ex.: offline) — sem isso, o próximo pushProfile()
+  // do onboarding novo poderia cair no caminho de "conflito" de
+  // pushRecord() e reviver campos antigos da conta antes do reset.
+  try{ localStorage.removeItem(META_KEY); }catch(e){}
+  return ok;
 }
 
 /* ---------- orquestração ----------
@@ -349,15 +393,27 @@ function init({getState, applyRemote, resetLocal}){
   }
 }
 /* Chamado sempre que a sessão muda (login, boot com sessão ativa, logout).
-   uid=null (logout) só interrompe a sincronização — nunca apaga o localStorage. */
+   uid=null (logout) só interrompe a sincronização aqui — quem limpa o
+   estado local (S) e o localStorage no logout é o handler SIGNED_OUT em
+   app.js (Auditoria Sprint 01, achado 18-1/9: antes disso, nada limpava
+   nada no logout). */
 function setUser(uid){
   clearTimeout(debounceTimer);
   userId = uid;
-  if(!uid || !host) return;
-  migrateIfNeeded().then(syncNow);
+  if(!uid || !host) return Promise.resolve();
+  // devolve só a promise de migrateIfNeeded() (não a de syncNow()):
+  // é a parte que decide reset/manutenção do S local, e é hoje
+  // resolvida de forma síncrona na prática (nenhum await antes do
+  // branch de troca de dono) — devolvê-la deixa essa garantia
+  // explícita pra quem chama, em vez de depender desse detalhe de
+  // timing implícito. syncNow() continua best-effort em background,
+  // sem bloquear quem espera por esta promise.
+  const migrated = migrateIfNeeded();
+  migrated.then(syncNow);
+  return migrated;
 }
 
-const dbApi = {init, onLocalSave, syncNow, setUser, setSyncAllowed};
+const dbApi = {init, onLocalSave, syncNow, setUser, setSyncAllowed, wipeServerData};
 
 if(window.__resolveDatabaseReady) window.__resolveDatabaseReady(dbApi);
 else window.__databaseReady = Promise.resolve(dbApi);

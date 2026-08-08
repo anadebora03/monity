@@ -38,6 +38,16 @@ function persistLocal(){
   try{ if(!store.set(KEY,JSON.stringify(S))) toast('Salvo nesta sessão (armazenamento local indisponível aqui)'); }
   catch(e){ toast('Não foi possível salvar (armazenamento cheio)'); }
 }
+/* Auditoria Sprint 01: zera S E os dois históricos locais sem user_id
+   (insights, actionplan) — usado tanto no logout (SIGNED_OUT) quanto
+   na troca de dono detectada por migrateIfNeeded() (resetLocal()),
+   pra essas duas chaves nunca vazarem de uma conta pra outra no mesmo
+   dispositivo em nenhum dos dois caminhos. */
+function limparEstadoLocal(){
+  S=null; persistLocal();
+  if(INSIGHTS) INSIGHTS.limparHistorico();
+  if(ACTIONPLAN) ACTIONPLAN.limparStatus();
+}
 function save(){
   persistLocal();
   if(DB) DB.onLocalSave();
@@ -1344,8 +1354,19 @@ function savePerfil(){
 function resetAll(){
   openSheet('confirmarReset');
 }
-function confirmarResetAll(){
-  S=null;store.set(KEY,'');closeSheet();go('inicio');
+async function confirmarResetAll(){
+  // Auditoria Sprint 01, achado 18-1: antes disso, isto só limpava o
+  // estado local — o Supabase continuava com tudo, e a próxima
+  // sincronização (visibilitychange, online, ou o próximo boot) trazia o
+  // histórico "resetado" de volta sozinho. wipeServerData() (best-effort,
+  // mesmo princípio de sync silenciosa quando offline) soft-deleta os
+  // dados no servidor antes de zerar o local, pra reset ser reset de
+  // verdade — inclusive entre dispositivos.
+  if(DB) await DB.wipeServerData();
+  S=null;store.set(KEY,'');
+  if(INSIGHTS) INSIGHTS.limparHistorico();
+  if(ACTIONPLAN) ACTIONPLAN.limparStatus();
+  closeSheet();go('inicio');
 }
 
 /* ---------- diário actions ---------- */
@@ -2463,8 +2484,11 @@ async function initDatabase(){
       getState:()=>S||emptyState(),
       applyRemote:(mutate)=>{ S=mutate(S||emptyState()); persistLocal(); render(); },
       // dispositivo reaproveitado por outra conta: descarta o estado local
-      // residual (nunca era dela) em vez de deixar migrateIfNeeded() herdá-lo
-      resetLocal:()=>{ S=null; persistLocal(); render(); },
+      // residual (nunca era dela) em vez de deixar migrateIfNeeded() herdá-lo.
+      // limparEstadoLocal() também zera insights/actionplan — sem isso só
+      // o S era limpo aqui, e os dois históricos locais dessas duas
+      // features continuavam vazando entre contas nesse caminho.
+      resetLocal:()=>{ limparEstadoLocal(); render(); },
     });
   }catch(e){
     console.error('[Sync] erro ao inicializar camada de dados:', e);
@@ -2564,15 +2588,31 @@ async function registrarListenerAuth(){
       new Promise(resolve=>setTimeout(()=>resolve(null), 4000)),
     ]);
     if(!auth) return;
-    auth.onAuthStateChange((event,session)=>{
+    auth.onAuthStateChange(async (event,session)=>{
       if(event==='PASSWORD_RECOVERY'){ AUTH_MSG=null; AUTH_SCREEN='nova-senha'; renderWelcome(); }
       else if(event==='SIGNED_IN'){
         AUTH_SCREEN='welcome';
-        if(DB) DB.setUser(session&&session.user&&session.user.id);
+        // splash até a promise de DB.setUser() resolver: é ela que decide
+        // (migrateIfNeeded()) se o S atual pertence a esta conta ou
+        // precisa ser zerado. Hoje essa decisão roda de forma síncrona na
+        // prática, mas esperar aqui explicitamente blinda o app contra
+        // reintroduzir o "flash" de dados da conta anterior (Auditoria
+        // Sprint 01, achado 18-4) caso esse detalhe de timing mude no
+        // futuro dentro de migrateIfNeeded().
+        document.getElementById('app').innerHTML = splashView();
+        if(DB) await DB.setUser(session&&session.user&&session.user.id);
         if(PLANO_TERAPEUTICO) PLANO_TERAPEUTICO.listarPlanosProfissional().then(p=>{ PLANO_PROF=p; render(); });
         render();
       }
-      else if(event==='SIGNED_OUT'){ AUTH_MSG=null; AUTH_SCREEN='welcome'; if(DB) DB.setUser(null); renderWelcome(); }
+      else if(event==='SIGNED_OUT'){
+        AUTH_MSG=null; AUTH_SCREEN='welcome';
+        if(DB) DB.setUser(null);
+        // Auditoria Sprint 01, achado 18-1/9: sair da conta precisa zerar o
+        // estado local — sem isso, ele fica em memória/localStorage até a
+        // próxima conta logar e o merge do pullProfile() misturar os dois.
+        limparEstadoLocal();
+        renderWelcome();
+      }
     });
   }catch(e){
     console.error('[Auth] erro ao registrar listener de sessão:', e);
@@ -2597,7 +2637,11 @@ async function boot(){
     if(DB){
       const client = await window.__supabaseReady;
       const {data} = await client.auth.getSession();
-      DB.setUser(data&&data.session&&data.session.user&&data.session.user.id);
+      // mesmo motivo do SIGNED_IN em registrarListenerAuth(): esperar a
+      // decisão de migrateIfNeeded() antes do render() abaixo, em vez de
+      // depender do timing implícito de não haver await antes do branch
+      // de troca de dono.
+      await DB.setUser(data&&data.session&&data.session.user&&data.session.user.id);
     }
     if(PLANO_TERAPEUTICO) PLANO_PROF = await PLANO_TERAPEUTICO.listarPlanosProfissional();
     render();
