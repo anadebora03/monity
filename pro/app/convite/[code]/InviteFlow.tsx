@@ -10,7 +10,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { signIn, signUp } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/client';
 
-const APP_PACIENTE_URL = 'https://compasso-chi.vercel.app';
+const APP_PACIENTE_URL = 'https://monityapp.vercel.app';
 
 type Preview = {
   status: 'pending' | 'active' | 'declined' | 'ended';

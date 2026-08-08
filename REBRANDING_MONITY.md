@@ -85,11 +85,13 @@ ocorrências levantado no início desta sprint.
   `compasso_notif_state_v1`, `compasso-landing-theme`, `compasso_pro_theme`) — são
   identificadores técnicos internos, não texto de marca visível. Renomear quebraria dados já
   salvos localmente pelos usuários existentes.
-- **2 URLs de produção hardcoded** (`https://compasso-chi.vercel.app` em
-  `pro/app/convite/[code]/InviteFlow.tsx`, `https://compasso.app` em `landing/lib/config.ts` e
-  `landing/.env.example`) — mantidas por instrução explícita de "preparar para futura troca sem
-  alterar funcionamento". Trocar por um domínio `monity.*` ainda não registrado quebraria o
-  fluxo real de convite e o SEO/OG da landing em produção.
+- **Atualização (2026-08-07, pós-lançamento)**: o projeto Vercel do Monity App foi renomeado de
+  `compasso` para `monityapp`, com novo alias público `https://monityapp.vercel.app`. A URL
+  hardcoded em `pro/app/convite/[code]/InviteFlow.tsx` foi atualizada para o novo endereço — não
+  é mais uma exceção preservada, o link de convite agora aponta para o domínio Monity de verdade.
+  `https://compasso.app` em `landing/lib/config.ts`/`landing/.env.example` continua preservado —
+  é um domínio próprio ainda não registrado (não uma URL Vercel gerada automaticamente), decisão
+  separada de quando/se registrar `monity.app` ou equivalente.
 - **Arquivos de imagem da logo/ícones/favicons** — os textos ao redor (alt, títulos) foram
   atualizados para Monity, mas os arquivos de imagem em si (`/brand/logo-mark.png`, ícones do
   manifest, favicons) não foram substituídos — é um ativo de design ainda não entregue.
