@@ -21,6 +21,16 @@ const OUT_DIR = path.join(__dirname, '..', 'public', 'shared-engine');
 
 const FILES = ['timeline.js', 'insights.js', 'actionplan.js', 'report-engine.js'];
 
+if (!fs.existsSync(SRC_DIR)) {
+  // Build remoto na Vercel: só pro/ é enviado, js/ da raiz do repo não
+  // existe nesse ambiente. Mantém as cópias já commitadas em
+  // public/shared-engine/ (sincronizadas no último "npm run build"
+  // local) em vez de falhar o build — só quem builda localmente com o
+  // monorepo completo consegue de fato atualizar essas cópias.
+  console.log('[sync-shared] js/ da raiz não encontrado (build remoto) — mantendo cópias já commitadas em public/shared-engine/.');
+  process.exit(0);
+}
+
 fs.mkdirSync(OUT_DIR, { recursive: true });
 
 for (const file of FILES) {
