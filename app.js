@@ -2454,7 +2454,13 @@ async function initDatabase(){
       new Promise(resolve=>setTimeout(()=>resolve(null), 4000)),
     ]);
     if(DB) DB.init({
-      getState:()=>S,
+      // nunca devolve null: pushProfile()/pushPen()/pushDailyLogs()/
+      // pushCollection() (js/database.js) leem host.getState() diretamente
+      // e mutam propriedades sem guarda contra null — pushAll() roda antes
+      // de pullAll() em syncNow(), então um S=null aqui quebrava a
+      // sincronização inteira antes mesmo do pull ter a chance de rodar
+      // (era engolido pelo try/catch de withSyncLock, silenciosamente).
+      getState:()=>S||emptyState(),
       applyRemote:(mutate)=>{ S=mutate(S||emptyState()); persistLocal(); render(); },
       // dispositivo reaproveitado por outra conta: descarta o estado local
       // residual (nunca era dela) em vez de deixar migrateIfNeeded() herdá-lo
