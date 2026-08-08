@@ -28,7 +28,7 @@ const COLLECTIONS = {
   agenda:       { table:'agenda',       cols:{tipo:'tipo',obs:'obs'} },
   bio:          { table:'bioimpedance', cols:{gordura:'gordura',massaMagraPct:'massa_magra',musculo:'musculo',agua:'agua',visceral:'visceral',tmb:'tmb'} },
 };
-const PROFILE_COLS = {nome:'nome',medicamento:'medicamento',doseAtual:'dose_atual',unidade:'unidade',diaAplicacao:'dia_aplicacao',dataInicio:'data_inicio',pesoInicial:'peso_inicial',pesoMeta:'peso_meta',altura:'altura',metaAgua:'meta_agua',metaProteina:'meta_proteina',historicalTreatment:'historical_treatment',historicalStartDate:'historical_start_date',historicalApplicationsCount:'historical_applications_count'};
+const PROFILE_COLS = {nome:'nome',medicamento:'medicamento',doseAtual:'dose_atual',unidade:'unidade',diaAplicacao:'dia_aplicacao',dataInicio:'data_inicio',pesoInicial:'peso_inicial',pesoMeta:'peso_meta',altura:'altura',metaAgua:'meta_agua',metaProteina:'meta_proteina',historicalTreatment:'historical_treatment',historicalStartDate:'historical_start_date',historicalApplicationsCount:'historical_applications_count',monityStartDate:'monity_start_date',lastApplicationDate:'last_application_date'};
 const PEN_COLS = {capacidadeMg:'capacidade_mg',doseMg:'dose_mg',usadas:'usadas'};
 const DAILY_COLS = {agua:'agua',proteina:'proteina',humor:'humor',apetite:'apetite',fomeEmocional:'fome_emocional'};
 

@@ -87,14 +87,23 @@ function imcClass(v){
 }
 function daysTreat(){return daysAgo(S.profile.dataInicio)+1;}
 function lastApp(){const a=[...S.applications].sort((x,y)=>x.date<y.date?-1:1);return a.length?a[a.length-1]:null;}
+/* Distingue aplicações históricas (contagem informada no onboarding
+   "já comecei antes", sem registro individual — item 5 da sprint de
+   correção) das registradas de fato no Monity (S.applications). */
+function historicalApplicationsCount(){return S.profile.historicalApplicationsCount||0;}
+function totalApplications(){return historicalApplicationsCount()+S.applications.length;}
 
 function nextAppInfo(){
   const wd=S.profile.diaAplicacao; // 0-6
   const now=new Date(); now.setHours(0,0,0,0);
   let diff=(wd-now.getDay()+7)%7;
-  // se aplicou hoje, próxima é daqui 7
+  // se aplicou hoje, próxima é daqui 7 — a última aplicação conhecida é a
+  // registrada no Monity; na ausência dela (histórico só com contagem,
+  // sem registro individual), cai para a última data informada no
+  // onboarding "já comecei antes"
   const la=lastApp();
-  if(diff===0 && la && la.date===todayISO()) diff=7;
+  const lastKnownDate=la?la.date:(S.profile.lastApplicationDate||null);
+  if(diff===0 && lastKnownDate===todayISO()) diff=7;
   const next=new Date(now); next.setDate(now.getDate()+diff);
   return {days:diff,date:todayISO(next),weekday:WD[wd]};
 }
@@ -262,7 +271,7 @@ function inicioView(){
 
   <div class="grid3">
     <div class="stat-tile2"><div class="k">Tratamento</div><div class="v" style="font-size:20px">${daysTreat()}<small> dias</small></div></div>
-    <div class="stat-tile2"><div class="k">Aplicações</div><div class="v" style="font-size:20px">${S.applications.length}</div></div>
+    <div class="stat-tile2"><div class="k">Aplicações</div><div class="v" style="font-size:20px">${totalApplications()}</div>${historicalApplicationsCount()?`<small style="display:block;font-size:9.5px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--tx-3);margin-top:2px">${historicalApplicationsCount()} hist. + ${S.applications.length}</small>`:''}</div>
     <div class="stat-tile2"><div class="k">IMC</div><div class="v" style="font-size:20px">${nf(imcVal)}</div>${imcVal?`<small style="display:block;font-size:9.5px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--tx-3);margin-top:2px">${imcClass(imcVal)}</small>`:''}</div>
   </div>
 
@@ -623,11 +632,18 @@ function journeyView(){
   const l=lost(); const pct=lostPct();
   const measWith=S.weighings.filter(x=>x.cintura!=null).sort((a,b)=>a.date<b.date?-1:1);
   const cinturaDelta=measWith.length>=2?(measWith[0].cintura-measWith[measWith.length-1].cintura).toFixed(1):null;
+  const hist=historicalApplicationsCount();
+  const aplicacoesTxt=hist
+    ?`${totalApplications()} aplicações de ${esc(S.profile.medicamento)} registradas (${hist} antes do Monity + ${S.applications.length} pelo Monity)`
+    :`realizou ${S.applications.length} aplicações de ${esc(S.profile.medicamento)}`;
+  const monityTxt=(S.profile.historicalTreatment&&S.profile.monityStartDate)
+    ?` Você acompanha esse tratamento pelo Monity desde ${fmtBRy(S.profile.monityStartDate)}.`:'';
   const txt=`Você iniciou o tratamento em ${fmtBRy(S.profile.dataInicio)} com ${nf(S.profile.pesoInicial)} kg. `+
-    `Após ${daysTreat()} dias, já ${l>=0?'perdeu':'variou'} ${nf(Math.abs(l))} kg (${nf(Math.abs(pct))}% do peso inicial), `+
-    `realizou ${S.applications.length} aplicações de ${esc(S.profile.medicamento)} e chegou à dose de ${esc(S.profile.doseAtual)} ${esc(S.profile.unidade)}. `+
+    `Ao longo de ${daysTreat()} dias de tratamento, já ${l>=0?'perdeu':'variou'} ${nf(Math.abs(l))} kg (${nf(Math.abs(pct))}% do peso inicial), `+
+    `${aplicacoesTxt} e chegou à dose de ${esc(S.profile.doseAtual)} ${esc(S.profile.unidade)}. `+
     (cinturaDelta&&cinturaDelta>0?`Sua cintura reduziu cerca de ${nf(cinturaDelta)} cm no período. `:'')+
-    `${l>=0&&currentWeight()>S.profile.pesoMeta?`Faltam ${nf(currentWeight()-S.profile.pesoMeta)} kg para sua meta de ${nf(S.profile.pesoMeta)} kg.`:'Você alcançou sua meta de peso.'}`;
+    `${l>=0&&currentWeight()>S.profile.pesoMeta?`Faltam ${nf(currentWeight()-S.profile.pesoMeta)} kg para sua meta de ${nf(S.profile.pesoMeta)} kg.`:'Você alcançou sua meta de peso.'}`+
+    monityTxt;
   return `
   <div class="scr-title" style="margin-bottom:14px">Minha jornada</div>
   <div class="gcard journey">
@@ -843,7 +859,7 @@ function statsView(){
   const cards=[
     ['Dias em tratamento',daysTreat()],
     ['Peso perdido',nf(lost())+' kg'],
-    ['Total de aplicações',S.applications.length],
+    ['Total de aplicações',totalApplications()],
     ['Dose média',nf(avgDose,avgDose%1?1:0)+' '+S.profile.unidade],
     ['Pesagens registradas',S.weighings.length],
     ['Água acumulada',nf(waterTotal,0)+' L'],
@@ -1461,7 +1477,9 @@ function obView(){
       ${anterior?`<div class="glass-field"><label for="o-atual">Peso atual (kg)</label>
         <label class="field-wrap" for="o-atual">${ic('scale')}<input id="o-atual" inputmode="decimal" placeholder="ex: 89"></label></div>
       <div class="glass-field"><label for="o-napl">Quantas aplicações você já realizou até hoje?</label>
-        <label class="field-wrap" for="o-napl">${ic('pill')}<input id="o-napl" inputmode="numeric" placeholder="ex: 8"></label></div>`:''}
+        <label class="field-wrap" for="o-napl">${ic('pill')}<input id="o-napl" inputmode="numeric" placeholder="ex: 8"></label></div>
+      <div class="glass-field"><label for="o-ultapl">Quando foi sua última aplicação? (opcional)</label>
+        <label class="field-wrap" for="o-ultapl">${ic('cal')}<input type="date" id="o-ultapl"></label></div>`:''}
       <div class="glass-field-2 asym">
         <div class="glass-field"><label for="o-alt">Altura (cm)</label>
           <label class="field-wrap" for="o-alt">${ic('ruler')}<input id="o-alt" inputmode="numeric" placeholder="ex: 165"></label></div>
@@ -1568,17 +1586,25 @@ function startNew(){
   const anterior=OB_MARCO==='anterior';
   const pini=numBR(val('o-pini')), pmeta=numBR(val('o-pmeta')), alt=parseInt(val('o-alt'));
   const atual=anterior?numBR(val('o-atual')):null;
-  const dataInicio=val('o-data')||todayISO();
+  const hoje=todayISO();
+  const dataInicio=val('o-data')||hoje;
   if(!pini||!pmeta||!alt){toast('Preencha peso inicial, meta e altura');return;}
   if(anterior&&!atual){toast('Preencha seu peso atual');return;}
-  if(anterior&&!dataInicio){toast('Preencha a data de início do tratamento');return;}
-  const napl=anterior?parseInt(val('o-napl')):null;
+  if(dataInicio>hoje){toast('A data de início do tratamento não pode ser no futuro');return;}
+  const naplRaw=val('o-napl');
+  const napl=naplRaw===''?null:parseInt(naplRaw);
+  if(anterior&&naplRaw!==''&&(!Number.isInteger(napl)||napl<0)){toast('Aplicações anteriores deve ser um número inteiro não negativo');return;}
+  const ultapl=anterior?(val('o-ultapl')||null):null;
+  if(ultapl&&ultapl>hoje){toast('A data da última aplicação não pode ser no futuro');return;}
+  if(ultapl&&ultapl<dataInicio){toast('A data da última aplicação não pode ser anterior ao início do tratamento');return;}
   const p={nome,medicamento:val('o-med'),doseAtual:val('o-dose')||'—',unidade:'mg',
     diaAplicacao:parseInt(val('o-dia')),dataInicio,
     pesoInicial:pini,pesoMeta:pmeta,altura:alt,metaAgua:3,metaProteina:100,
+    monityStartDate:hoje,
     historicalTreatment:anterior,historicalStartDate:anterior?dataInicio:null,
-    historicalApplicationsCount:(anterior&&napl>0)?napl:null};
-  S=blankState(p,anterior?{date:todayISO(),peso:atual}:null);save();go('inicio');
+    historicalApplicationsCount:(anterior&&napl!=null)?napl:null,
+    lastApplicationDate:ultapl};
+  S=blankState(p,anterior?{date:hoje,peso:atual}:null);save();go('inicio');
 }
 function startExample(){S=seedExample();save();toast('Dados de exemplo carregados');go('inicio');}
 

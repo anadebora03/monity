@@ -19,3 +19,15 @@
 alter table profiles add column if not exists historical_treatment boolean not null default false;
 alter table profiles add column if not exists historical_start_date date;
 alter table profiles add column if not exists historical_applications_count integer;
+
+-- ------------------------------------------------------------
+-- Correção seguinte (Sprint — Correção do Histórico de Tratamento
+-- anterior ao Monity): monity_start_date distingue "início do
+-- tratamento" (data_inicio) de "início do acompanhamento no Monity"
+-- — nunca a mesma coisa quando historical_treatment=true.
+-- last_application_date alimenta o cálculo de próxima aplicação
+-- (nextAppInfo() em app.js) para quem ainda não registrou nenhuma
+-- aplicação dentro do Monity.
+-- ------------------------------------------------------------
+alter table profiles add column if not exists monity_start_date date;
+alter table profiles add column if not exists last_application_date date;
