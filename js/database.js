@@ -427,16 +427,15 @@ function setUser(uid){
   clearTimeout(debounceTimer);
   userId = uid;
   if(!uid || !host) return Promise.resolve();
-  // devolve só a promise de migrateIfNeeded() (não a de syncNow()):
-  // é a parte que decide reset/manutenção do S local, e é hoje
-  // resolvida de forma síncrona na prática (nenhum await antes do
-  // branch de troca de dono) — devolvê-la deixa essa garantia
-  // explícita pra quem chama, em vez de depender desse detalhe de
-  // timing implícito. syncNow() continua best-effort em background,
-  // sem bloquear quem espera por esta promise.
-  const migrated = migrateIfNeeded();
-  migrated.then(syncNow);
-  return migrated;
+  // devolve a cadeia completa migrateIfNeeded() → syncNow(): a
+  // primeira só decide SE deve migrar; quem de fato busca e aplica o
+  // perfil no S local é pullProfile(), dentro de syncNow(). Devolver
+  // só migrateIfNeeded() (como era antes) fazia quem chama achar que
+  // já podia confiar em S.profile sem ele ainda ter chegado — exatamente
+  // a causa do onboarding "piscar e sumir sozinho" pra contas que já
+  // tinham cadastro: app.js fazia `await DB.setUser(...)` esperando
+  // pouco tempo demais, e o render() seguinte via S ainda vazio.
+  return migrateIfNeeded().then(syncNow);
 }
 
 const dbApi = {init, onLocalSave, syncNow, setUser, setSyncAllowed, wipeServerData};
