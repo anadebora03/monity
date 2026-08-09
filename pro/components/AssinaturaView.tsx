@@ -130,7 +130,7 @@ export function AssinaturaView({ data }: { data: AssinaturaData }) {
               </div>
               <div className="mt-1.5 flex items-baseline justify-between text-[11.5px] text-ink-faint dark:text-white/40">
                 <span>{uso.percentual}% utilizado</span>
-                <span>{uso.disponiveis === 0 ? 'Limite atingido' : `${uso.disponiveis} acesso${uso.disponiveis === 1 ? '' : 's'} disponível${uso.disponiveis === 1 ? '' : 'is'}`}</span>
+                <span>{uso.disponiveis === 0 ? 'Limite atingido' : `${uso.disponiveis} ${uso.disponiveis === 1 ? 'acesso disponível' : 'acessos disponíveis'}`}</span>
               </div>
             </>
           )}
