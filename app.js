@@ -2594,6 +2594,18 @@ async function doUpdatePassword(){
 }
 async function doLogout(){
   await withAuthBtn('logout-btn','Saindo…',async()=>{
+    // Sprint 3.3 (TESTE A, bug 2): save() só AGENDA a sincronização
+    // (debounce de 1.5s, scheduleSync() em js/database.js) — sem
+    // esperar aqui, um logout rápido demais depois de completar o
+    // onboarding (ou qualquer outro save) podia sair antes do push
+    // chegar no servidor. limparEstadoLocal() (chamado pelo listener
+    // SIGNED_OUT logo depois) zera o S local incondicionalmente, então
+    // o dado nunca salvo no servidor simplesmente sumia — no próximo
+    // login, o app corretamente não achava nada e mostrava onboarding
+    // de novo (não é "esquecer o usuário", é o dado nunca ter sido
+    // persistido). syncNow() força o push imediato, ignorando o
+    // debounce, antes de encerrar a sessão.
+    if(DB) await DB.syncNow();
     const auth=await window.__authReady;
     const r=await auth.signOut();
     if(!r.ok){ toast(r.error); return; }

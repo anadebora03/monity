@@ -95,13 +95,13 @@ export function PatientDetailView({
         <StatsGrid p={p} />
       </div>
 
-      <div className="mt-4 overflow-x-auto">
-        <div className="flex w-max gap-1 border-b border-slate-100 dark:border-white/5">
+      <div className="mt-3 overflow-x-auto">
+        <div className="flex w-max gap-0.5 border-b border-slate-100 dark:border-white/5">
           {ABAS.map((t) => (
             <button
               key={t.id}
               onClick={() => setAba(t.id)}
-              className={`shrink-0 border-b-[1.5px] px-3 py-2 text-[13px] font-medium transition-colors duration-150 ${
+              className={`shrink-0 border-b-[1.5px] px-2.5 py-1.5 text-[13px] font-medium transition-colors duration-150 ${
                 aba === t.id
                   ? 'border-accent text-accent dark:border-accent-light dark:text-accent-light'
                   : 'border-transparent text-ink-soft hover:text-ink dark:text-white/50 dark:hover:text-white'

@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Menu, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Sidebar } from '@/components/Sidebar';
-import { Logo } from '@/components/ui/Logo';
+import { Header } from '@/components/Header';
+import type { PacienteLista } from '@/lib/patients';
 
 /* Shell responsivo de /pro/* — Sprint 017 pede explicitamente que o
    dashboard funcione em mobile "reorganizando os cards sem perder
@@ -11,35 +12,31 @@ import { Logo } from '@/components/ui/Logo';
    então aqui ela vira uma gaveta (drawer): escondida por padrão
    abaixo de lg, um botão de menu abre por cima do conteúdo com um
    fundo escurecido atrás — mesmo padrão de qualquer SaaS de
-   dashboard, não um componente novo por tela. */
+   dashboard, não um componente novo por tela.
+
+   Sprint 3.4 (redesign premium): a barra mobile solta virou o Header
+   persistente (mesmo componente em qualquer largura, cobre busca/
+   notificações/tema/avatar — antes só existia em mobile e só tinha
+   hambúrguer+logo). */
 export function ProShell({
   nome,
   workspaceName,
   fotoUrl,
+  especialidade,
+  pacientes,
   children,
 }: {
   nome: string;
   workspaceName: string;
   fotoUrl?: string | null;
+  especialidade?: string | null;
+  pacientes: PacienteLista[];
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-white dark:bg-navy">
-      {/* barra superior — só aparece abaixo de lg */}
-      <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-3 dark:border-white/5 lg:hidden">
-        <button
-          onClick={() => setOpen(true)}
-          aria-label="Abrir menu"
-          className="flex h-9 w-9 items-center justify-center rounded-sm text-ink-soft hover:bg-slate-50 dark:text-white/70 dark:hover:bg-white/5"
-        >
-          <Menu size={20} strokeWidth={2} />
-        </button>
-        <Logo size={26} />
-        <span className="text-sm font-bold tracking-[-0.01em] text-ink dark:text-white">Monity Pro</span>
-      </div>
-
       {open && (
         <div className="fixed inset-0 z-40 bg-black/30 lg:hidden" onClick={() => setOpen(false)} aria-hidden="true" />
       )}
@@ -57,11 +54,14 @@ export function ProShell({
           >
             <X size={18} strokeWidth={2} />
           </button>
-          <Sidebar nome={nome} workspaceName={workspaceName} fotoUrl={fotoUrl} />
+          <Sidebar nome={nome} workspaceName={workspaceName} fotoUrl={fotoUrl} especialidade={especialidade} />
         </div>
       </div>
 
-      <div className="lg:ml-56">{children}</div>
+      <div className="lg:ml-56">
+        <Header nome={nome} especialidade={especialidade} fotoUrl={fotoUrl} pacientes={pacientes} onMenuClick={() => setOpen(true)} />
+        {children}
+      </div>
     </div>
   );
 }

@@ -8,6 +8,10 @@ function nf(n: number) {
 
 export function StatsGrid({ p }: { p: PatientDetail }) {
   const variacao = p.variacaoTotal;
+  // Meta em kg como valor principal, não percentual — "Faltam X kg" é
+  // muito mais acionável pro acompanhamento clínico do que "82%".
+  const faltamKg = p.pesoAtual != null && p.pesoMeta != null ? +(p.pesoAtual - p.pesoMeta).toFixed(1) : null;
+  const metaCaption = faltamKg == null ? undefined : faltamKg > 0 ? `Faltam ${nf(faltamKg)} kg` : 'Meta atingida';
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
       <StatCard icon={Scale} label="Peso atual" value={p.pesoAtual != null ? `${nf(p.pesoAtual)} kg` : '—'} />
@@ -17,7 +21,7 @@ export function StatsGrid({ p }: { p: PatientDetail }) {
         tone={variacao != null && variacao > 0 ? 'good' : 'accent'}
         value={variacao != null ? `${variacao >= 0 ? '−' : '+'}${nf(Math.abs(variacao))} kg` : '—'}
       />
-      <StatCard icon={Target} label="Meta" value={p.percentualMeta != null ? `${p.percentualMeta}%` : '—'} caption={p.pesoMeta != null ? `${nf(p.pesoMeta)} kg` : undefined} />
+      <StatCard icon={Target} label="Meta" value={p.pesoMeta != null ? `${nf(p.pesoMeta)} kg` : '—'} caption={metaCaption} />
       <StatCard
         icon={Syringe}
         label="Próxima aplicação"

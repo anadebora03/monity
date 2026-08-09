@@ -40,7 +40,7 @@ export function InviteModal({ open, onClose }: { open: boolean; onClose: () => v
       setError(res.error);
       return;
     }
-    setLink(`${window.location.origin}/convite/${res.code}`);
+    setLink(res.link);
   }
 
   async function copiarLink() {

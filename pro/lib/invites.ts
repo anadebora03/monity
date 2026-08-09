@@ -2,6 +2,7 @@
 
 import crypto from 'node:crypto';
 import { createClient } from '@/lib/supabase/server';
+import { getAppBaseUrl } from '@/lib/url';
 
 /* Código do convite = o "token" da URL (/convite/CODIGO). Gerado no
    servidor (nunca no navegador) com crypto.randomBytes — mesmo nível
@@ -60,7 +61,11 @@ export async function criarConvite(nome: string, email: string) {
       nome_convidado: nome || null,
       status: 'pending',
     });
-    if (!error) return { ok: true as const, code };
+    // Sprint 3.3 (TESTE A, bug 1): o link é montado aqui, no servidor,
+    // via getAppBaseUrl() — nunca mais no client com
+    // window.location.origin (pro/lib/url.ts explica a ordem de
+    // prioridade). Único ponto que gera link de convite no app inteiro.
+    if (!error) return { ok: true as const, code, link: `${getAppBaseUrl()}/convite/${code}` };
     if (!String(error.message).includes('duplicate')) {
       return { ok: false as const, error: 'Não foi possível criar o convite. Tente novamente.' };
     }

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Users, RefreshCw, AlertTriangle, UserPlus, Compass, ClipboardList } from 'lucide-react';
+import { Users, RefreshCw, AlertTriangle, UserPlus, Compass, ClipboardList, ArrowRight, Sparkles } from 'lucide-react';
 import type { DashboardData } from '@/lib/dashboard';
 import { HeroCard, Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -117,78 +117,103 @@ export function DashboardView({ nome, d }: { nome: string; d: DashboardData }) {
         <PriorityPatientsCard pacientes={d.prioridades.pacientes} />
       </div>
 
-      {/* 4. Agenda de hoje */}
-      <Card className="mt-4 animate-fade-in">
-        <div className="mb-2.5 flex items-center justify-between">
-          <p className="text-[11px] font-semibold uppercase tracking-[.09em] text-ink-faint dark:text-white/40">Agenda de hoje</p>
-          <Link href="/pro/agenda" className="text-xs font-medium text-accent hover:underline dark:text-accent-light">
-            Ver agenda
-          </Link>
+      {/* 4. Pacientes recentes + Agenda de hoje, lado a lado (Sprint 3.4:
+             mais denso que duas seções empilhadas full-width) */}
+      <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-[2fr_1fr]">
+        <div>
+          <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[.09em] text-ink-faint dark:text-white/40">Pacientes recentes</p>
+          <Card className="p-4">
+            <PatientTable pacientes={d.pacientes.slice(0, 6)} />
+          </Card>
         </div>
-        {d.agendaHoje.length > 0 ? (
-          <ul className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-            {d.agendaHoje.map((a, i) => (
-              <li key={i} className="flex items-baseline gap-2 text-[13px]">
-                <span className="w-9 shrink-0 font-semibold text-accent dark:text-accent-light">{a.hora ? a.hora.slice(0, 5) : '—'}</span>
-                <div className="min-w-0">
-                  <p className="truncate font-medium text-ink dark:text-white">{a.pacienteNome}</p>
-                  <p className="text-[11.5px] text-ink-faint dark:text-white/40">{a.tipo}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className="flex flex-col items-center py-4 text-center">
-            <Compass size={20} strokeWidth={1.8} className="text-ink-faint dark:text-white/30" />
-            <p className="mt-1.5 text-[13px] text-ink-faint dark:text-white/40">Nenhum compromisso hoje.</p>
-          </div>
-        )}
-      </Card>
 
-      {/* 5. Pacientes recentes — secundário, peso visual reduzido */}
-      <div className="mt-4">
-        <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[.09em] text-ink-faint dark:text-white/40">Pacientes recentes</p>
-        <Card className="p-4">
-          <PatientTable pacientes={d.pacientes.slice(0, 6)} />
+        <Card className="animate-fade-in">
+          <div className="mb-2.5 flex items-center justify-between">
+            <p className="text-[11px] font-semibold uppercase tracking-[.09em] text-ink-faint dark:text-white/40">Agenda de hoje</p>
+            <Link href="/pro/agenda" className="text-xs font-medium text-accent hover:underline dark:text-accent-light">
+              Ver agenda
+            </Link>
+          </div>
+          {d.agendaHoje.length > 0 ? (
+            <ul className="space-y-2.5">
+              {d.agendaHoje.map((a, i) => (
+                <li key={i} className="flex items-baseline gap-2 text-[13px]">
+                  <span className="w-9 shrink-0 font-semibold text-accent dark:text-accent-light">{a.hora ? a.hora.slice(0, 5) : '—'}</span>
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-ink dark:text-white">{a.pacienteNome}</p>
+                    <p className="text-[11.5px] text-ink-faint dark:text-white/40">{a.tipo}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="flex flex-col items-center py-4 text-center">
+              <Compass size={20} strokeWidth={1.8} className="text-ink-faint dark:text-white/30" />
+              <p className="mt-1.5 text-[13px] text-ink-faint dark:text-white/40">Nenhum compromisso hoje.</p>
+            </div>
+          )}
         </Card>
       </div>
 
-      {/* 6. Insights clínicos — secundário */}
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {/* 5. Banner institucional + Insights rápidos, lado a lado.
+             Insights reaproveita d.insights (mesma fonte que já
+             alimentava a antiga seção "Insights" — só reorganizado
+             como lista compacta e clicável, sem cálculo novo). */}
+      <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <HeroCard className="flex flex-col justify-center p-6">
+          <p className="text-lg font-bold tracking-[-0.015em] text-ink dark:text-white">Acompanhe cada detalhe da evolução</p>
+          <p className="mt-1.5 max-w-sm text-[13px] text-ink-soft dark:text-white/60">
+            Visualize evolução, relatórios e indicadores dos seus pacientes em um só lugar.
+          </p>
+          <Link
+            href="/pro/relatorios"
+            className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-accent hover:underline dark:text-accent-light"
+          >
+            Ver relatórios completos
+            <ArrowRight size={14} strokeWidth={2.2} />
+          </Link>
+        </HeroCard>
+
         <Card className="p-4">
-          <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[.09em] text-ink-faint dark:text-white/40">Insights</p>
+          <p className="mb-2.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[.09em] text-ink-faint dark:text-white/40">
+            <Sparkles size={12} strokeWidth={2} />
+            Insights rápidos
+          </p>
           {d.insights.length > 0 ? (
             <div className="space-y-2">
               {d.insights.map((ins, i) => (
-                <InsightCard key={i} {...ins} />
+                <Link key={i} href="/pro/pacientes" className="block transition duration-150 ease-out hover:-translate-y-0.5">
+                  <InsightCard {...ins} />
+                </Link>
               ))}
             </div>
           ) : (
             <p className="text-[13px] text-ink-faint dark:text-white/40">Nenhum insight novo por enquanto.</p>
           )}
         </Card>
-
-        <Card className="p-4">
-          <div className="mb-2.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[.09em] text-ink-faint dark:text-white/40">
-            <ClipboardList size={12} strokeWidth={2} />
-            Planos terapêuticos
-          </div>
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <div>
-              <p className="text-base font-bold text-ink dark:text-white">{d.planoTerapeutico.pendentes}</p>
-              <p className="text-[10.5px] text-ink-faint dark:text-white/40">Pendentes</p>
-            </div>
-            <div>
-              <p className="text-base font-bold text-good">{d.planoTerapeutico.concluidos}</p>
-              <p className="text-[10.5px] text-ink-faint dark:text-white/40">Concluídos</p>
-            </div>
-            <div>
-              <p className={`text-base font-bold ${d.planoTerapeutico.emAtraso > 0 ? 'text-danger' : 'text-ink dark:text-white'}`}>{d.planoTerapeutico.emAtraso}</p>
-              <p className="text-[10.5px] text-ink-faint dark:text-white/40">Em atraso</p>
-            </div>
-          </div>
-        </Card>
       </div>
+
+      {/* 6. Planos terapêuticos */}
+      <Card className="mt-4 p-4">
+        <div className="mb-2.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[.09em] text-ink-faint dark:text-white/40">
+          <ClipboardList size={12} strokeWidth={2} />
+          Planos terapêuticos
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center sm:max-w-xs">
+          <div>
+            <p className="text-base font-bold text-ink dark:text-white">{d.planoTerapeutico.pendentes}</p>
+            <p className="text-[10.5px] text-ink-faint dark:text-white/40">Pendentes</p>
+          </div>
+          <div>
+            <p className="text-base font-bold text-good">{d.planoTerapeutico.concluidos}</p>
+            <p className="text-[10.5px] text-ink-faint dark:text-white/40">Concluídos</p>
+          </div>
+          <div>
+            <p className={`text-base font-bold ${d.planoTerapeutico.emAtraso > 0 ? 'text-danger' : 'text-ink dark:text-white'}`}>{d.planoTerapeutico.emAtraso}</p>
+            <p className="text-[10.5px] text-ink-faint dark:text-white/40">Em atraso</p>
+          </div>
+        </div>
+      </Card>
     </div>
   );
 }

@@ -180,12 +180,12 @@ export function PatientHeader({ p, workspaceId, prioridade }: { p: PatientDetail
 
   return (
     <div className="relative z-20 animate-fade-in">
-      <Link href="/pro/pacientes" className="mb-2.5 inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-soft hover:text-ink dark:text-white/60 dark:hover:text-white">
+      <Link href="/pro/pacientes" className="mb-2 inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-soft hover:text-ink dark:text-white/60 dark:hover:text-white">
         <ArrowLeft size={15} strokeWidth={2} />
         Pacientes
       </Link>
-      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col justify-between gap-2.5 sm:flex-row sm:items-center">
+        <div className="flex items-center gap-2.5">
           <Avatar nome={p.nome} size={44} fotoUrl={p.avatarUrl} />
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">

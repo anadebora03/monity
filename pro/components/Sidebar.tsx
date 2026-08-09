@@ -2,22 +2,64 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Users, Mail, FileText, Settings, LogOut, CalendarDays } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Users,
+  Mail,
+  FileText,
+  Settings,
+  LogOut,
+  CalendarDays,
+  MessageSquare,
+  CreditCard,
+  HelpCircle,
+} from 'lucide-react';
 import { signOut } from '@/lib/auth';
 import { Logo } from '@/components/ui/Logo';
 import { Avatar } from '@/components/ui/Avatar';
-import { ThemeToggle } from '@/components/ThemeToggle';
 
-const NAV_ITEMS = [
-  { href: '/pro', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/pro/agenda', label: 'Agenda', icon: CalendarDays },
-  { href: '/pro/pacientes', label: 'Pacientes', icon: Users },
-  { href: '/pro/convites', label: 'Convites', icon: Mail },
-  { href: '/pro/relatorios', label: 'Relatórios', icon: FileText },
-  { href: '/pro/configuracoes', label: 'Configurações', icon: Settings },
+/* Grupos em vez de lista plana (Sprint 3.4 — redesign premium): a
+   densidade/hierarquia do menu é uma das coisas que mais reforça a
+   sensação de "produto completo" — labels de grupo reaproveitam a
+   mesma classe já usada pros títulos de seção do Dashboard. */
+const NAV_GROUPS = [
+  {
+    label: 'Principal',
+    items: [
+      { href: '/pro', label: 'Dashboard', icon: LayoutDashboard },
+      { href: '/pro/pacientes', label: 'Pacientes', icon: Users },
+      { href: '/pro/agenda', label: 'Agenda', icon: CalendarDays },
+      { href: '/pro/relatorios', label: 'Relatórios', icon: FileText },
+      { href: '/pro/convites', label: 'Convites', icon: Mail },
+      { href: '/pro/mensagens', label: 'Mensagens', icon: MessageSquare },
+    ],
+  },
+  {
+    label: 'Gestão',
+    items: [
+      { href: '/pro/assinatura', label: 'Assinatura', icon: CreditCard },
+    ],
+  },
+  {
+    label: 'Configuração',
+    items: [
+      { href: '/pro/configuracoes', label: 'Configurações', icon: Settings },
+      { href: '/pro/ajuda', label: 'Ajuda', icon: HelpCircle },
+    ],
+  },
 ];
 
-export function Sidebar({ nome, workspaceName, fotoUrl }: { nome: string; workspaceName: string; fotoUrl?: string | null }) {
+export function Sidebar({
+  nome,
+  workspaceName,
+  fotoUrl,
+  especialidade,
+}: {
+  nome: string;
+  workspaceName: string;
+  fotoUrl?: string | null;
+  especialidade?: string | null;
+}) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -35,27 +77,35 @@ export function Sidebar({ nome, workspaceName, fotoUrl }: { nome: string; worksp
           <p className="text-[13px] font-bold tracking-[-0.01em] text-ink dark:text-white">Monity Pro</p>
           <p className="truncate text-[10.5px] text-ink-faint dark:text-white/40">{workspaceName}</p>
         </div>
-        <ThemeToggle />
       </div>
 
-      <nav className="flex-1 space-y-px px-3">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-          const active = href === '/pro' ? pathname === '/pro' : pathname.startsWith(href);
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`flex items-center gap-2.5 rounded-xs px-3 py-2 text-[13px] font-medium tracking-[-0.005em] transition duration-150 ease-out ${
-                active
-                  ? 'bg-accent-gradient-soft text-accent dark:bg-accent-light/15 dark:text-accent-light'
-                  : 'text-ink-soft hover:bg-slate-50 hover:text-ink dark:text-white/60 dark:hover:bg-white/5 dark:hover:text-white'
-              }`}
-            >
-              <Icon size={16} strokeWidth={2} />
-              {label}
-            </Link>
-          );
-        })}
+      <nav className="flex-1 px-3">
+        {NAV_GROUPS.map((group, i) => (
+          <div key={group.label} className={i > 0 ? 'mt-4' : ''}>
+            <p className="px-3 pb-1 text-[10.5px] font-semibold uppercase tracking-[.09em] text-ink-faint dark:text-white/40">
+              {group.label}
+            </p>
+            <div className="space-y-px">
+              {group.items.map(({ href, label, icon: Icon }) => {
+                const active = href === '/pro' ? pathname === '/pro' : pathname.startsWith(href);
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={`flex items-center gap-2.5 rounded-xs px-3 py-2 text-[13px] font-medium tracking-[-0.005em] transition duration-150 ease-out ${
+                      active
+                        ? 'bg-accent-gradient-soft text-accent dark:bg-accent-light/15 dark:text-accent-light'
+                        : 'text-ink-soft hover:bg-slate-50 hover:text-ink dark:text-white/60 dark:hover:bg-white/5 dark:hover:text-white'
+                    }`}
+                  >
+                    <Icon size={16} strokeWidth={2} />
+                    {label}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
 
       <div className="border-t border-slate-100 p-3 dark:border-white/5">
@@ -63,6 +113,9 @@ export function Sidebar({ nome, workspaceName, fotoUrl }: { nome: string; worksp
           <Avatar nome={nome} size={28} fotoUrl={fotoUrl} />
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs font-semibold text-ink dark:text-white">{nome}</p>
+            {especialidade && (
+              <p className="truncate text-[10.5px] text-ink-faint dark:text-white/40">{especialidade}</p>
+            )}
           </div>
         </div>
         <button
