@@ -34,6 +34,20 @@ export async function criarConvite(nome: string, email: string) {
   const { data: workspace } = await supabase.from('workspaces').select('id').eq('owner_id', user.id).maybeSingle();
   if (!workspace) return { ok: false as const, error: 'Workspace não encontrado.' };
 
+  // Sprint Assinatura (item 4/15 — limite de pacientes do plano): checagem
+  // de UX aqui, pra dar feedback imediato sem nem gerar o convite. A trava
+  // que realmente vale é dentro de redeem_workspace_invite() (schema_pro_030.sql,
+  // SECURITY DEFINER) — esta aqui só evita o profissional gastar um convite
+  // que nunca poderia ser aceito.
+  const { data: usage } = await supabase
+    .from('workspace_patient_usage')
+    .select('patient_limit, patients_used')
+    .eq('workspace_id', workspace.id)
+    .maybeSingle();
+  if (usage?.patient_limit != null && usage.patients_used >= usage.patient_limit) {
+    return { ok: false as const, error: 'Seu plano atingiu o limite de pacientes. Faça upgrade para convidar mais pacientes.' };
+  }
+
   // Sprint 3.2 (item 15 — impedir duplicidade): sem isso, convidar o
   // mesmo e-mail duas vezes criava dois convites "pending" em paralelo
   // — nenhum dos dois é tecnicamente um vínculo ainda, então o índice

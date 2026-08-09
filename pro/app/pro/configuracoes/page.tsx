@@ -18,9 +18,12 @@ export default async function ConfiguracoesPage() {
     .eq('id', user!.id)
     .maybeSingle();
 
+  // "plans!plan_id" desambigua o embed: workspaces ganhou uma segunda FK
+  // pra plans (requested_plan_id, Sprint Assinatura) — "plans ( nome )"
+  // sozinho passa a ser ambíguo pro PostgREST assim que ela existe.
   const { data: workspace } = await supabase
     .from('workspaces')
-    .select('nome, status, plans ( nome )')
+    .select('nome, status, plans!plan_id ( nome )')
     .eq('owner_id', user!.id)
     .maybeSingle();
 

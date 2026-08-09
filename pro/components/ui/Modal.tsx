@@ -11,11 +11,17 @@ export function Modal({
   onClose,
   title,
   children,
+  maxWidth = 'max-w-md',
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  /* Sprint Assinatura: comparação de 4 planos lado a lado precisa de
+     mais espaço que qualquer modal anterior (todos cabiam em max-w-md).
+     Opcional com o valor antigo como default — nenhum modal existente
+     muda de tamanho. */
+  maxWidth?: string;
 }) {
   useEffect(() => {
     if (!open) return;
@@ -30,7 +36,9 @@ export function Modal({
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/40 animate-fade-in" onClick={onClose} aria-hidden="true" />
-      <div className="relative z-10 w-full max-w-md animate-fade-in rounded-lg border border-slate-100 bg-white p-6 shadow-card dark:border-white/5 dark:bg-navy-soft dark:shadow-card-dark">
+      <div
+        className={`relative z-10 max-h-[85vh] w-full ${maxWidth} overflow-y-auto animate-fade-in rounded-lg border border-slate-100 bg-white p-6 shadow-card dark:border-white/5 dark:bg-navy-soft dark:shadow-card-dark`}
+      >
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-lg font-bold tracking-[-0.01em] text-ink dark:text-white">{title}</h2>
           <button
