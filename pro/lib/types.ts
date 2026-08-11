@@ -29,19 +29,45 @@ export type Plan = {
 
 export type SubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'canceled';
 
+export type SubscriptionProductType = 'professional' | 'patient';
+
 /* Sprint Assinatura — tabela nasce vazia (schema_pro_025.sql) até
    existir integração de pagamento ou cadastro manual pelo admin; um
-   workspace pode legitimamente não ter nenhuma linha aqui ainda. */
+   workspace pode legitimamente não ter nenhuma linha aqui ainda.
+   Sprint Integração Eduzz (schema_pro_032.sql): workspace_id/plan_id
+   viram opcionais e user_id aparece — assinatura de PACIENTE tem
+   user_id preenchido e workspace_id/plan_id nulos; assinatura de
+   PROFISSIONAL é o inverso. Nunca os dois preenchidos ao mesmo tempo
+   (constraint no banco). */
 export type Subscription = {
   id: string;
-  workspace_id: string;
-  plan_id: string;
+  workspace_id: string | null;
+  user_id: string | null;
+  plan_id: string | null;
+  subscription_product_id: string | null;
+  product_type: SubscriptionProductType;
   status: SubscriptionStatus;
   valor_cents: number | null;
+  provider_subscription_id: string | null;
+  external_customer_id: string | null;
   current_period_end: string | null;
   ultimo_pagamento_em: string | null;
   canceled_at: string | null;
   cancel_reason: string | null;
+};
+
+/* Mapeamento external_product_id (Eduzz, ou outro provider futuro) ->
+   plano Monity. Sem UI ainda — cadastro manual pelo admin depois que
+   os produtos existirem de verdade na Eduzz (schema_pro_032.sql). */
+export type SubscriptionProduct = {
+  id: string;
+  provider: string;
+  external_product_id: string;
+  product_type: SubscriptionProductType;
+  plan_id: string | null;
+  patient_product_slug: string | null;
+  billing_interval: string | null;
+  active: boolean;
 };
 
 export type ProfessionalProfile = {
