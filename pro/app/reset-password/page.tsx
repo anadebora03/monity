@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { AuthShell, ErrorText } from '@/components/AuthShell';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -21,10 +22,20 @@ import { createClient } from '@/lib/supabase/client';
    expirado, mesmo com a troca já concluída com sucesso. Corrigido
    checando getSession() imediatamente ao montar (cobre "já
    aconteceu") E continuando a ouvir onAuthStateChange (cobre "está
-   prestes a acontecer") — qualquer um dos dois libera o formulário. */
-export default function ResetPasswordPage() {
+   prestes a acontecer") — qualquer um dos dois libera o formulário.
+
+   Desde a troca pro fluxo /auth/confirm (verifyOtp por token_hash, ver
+   pro/app/auth/confirm/route.ts), a sessão já chega pronta via cookie
+   ANTES desta página carregar — o getSession() abaixo já é suficiente
+   na maioria dos casos; o listener de PASSWORD_RECOVERY fica como
+   rede de segurança pro caso raro de o cookie ainda não ter
+   propagado. ?erro=link_invalido (redirect explícito de
+   /auth/confirm quando verifyOtp falha) pula direto pro estado de
+   erro, sem esperar o timeout. */
+function ResetPasswordForm() {
+  const searchParams = useSearchParams();
   const [prontoParaTrocar, setProntoParaTrocar] = useState(false);
-  const [linkInvalido, setLinkInvalido] = useState(false);
+  const [linkInvalido, setLinkInvalido] = useState(searchParams.get('erro') === 'link_invalido');
   const [senha, setSenha] = useState('');
   const [confirmar, setConfirmar] = useState('');
   const [error, setError] = useState('');
@@ -32,6 +43,7 @@ export default function ResetPasswordPage() {
   const [sucesso, setSucesso] = useState(false);
 
   useEffect(() => {
+    if (linkInvalido) return;
     const supabase = createClient();
     let liberado = false;
 
@@ -68,7 +80,7 @@ export default function ResetPasswordPage() {
       subscription.unsubscribe();
       clearTimeout(timeout);
     };
-  }, []);
+  }, [linkInvalido]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -142,5 +154,13 @@ export default function ResetPasswordPage() {
         </Button>
       </form>
     </AuthShell>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={null}>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }

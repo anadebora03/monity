@@ -23,7 +23,11 @@ import { NextResponse, type NextRequest } from 'next/server';
    pra passar pelo middleware (que roda no servidor, olhando cookies
    já existentes), o primeiro request cairia em /login antes mesmo do
    client ter a chance de processar o link. */
-const PUBLIC_PATHS = ['/', '/login', '/cadastro', '/recuperar-senha', '/reset-password'];
+/* /auth/confirm: Route Handler que troca token_hash por sessão
+   (verifyOtp) — chega sem sessão nenhuma ainda, pelo mesmo motivo de
+   /reset-password acima. Fica público só pra deixar o handler rodar;
+   ele mesmo decide pra onde redirecionar depois. */
+const PUBLIC_PATHS = ['/', '/login', '/cadastro', '/recuperar-senha', '/reset-password', '/auth/confirm'];
 const PUBLIC_PREFIXES = ['/convite/'];
 
 export async function updateSession(request: NextRequest) {
