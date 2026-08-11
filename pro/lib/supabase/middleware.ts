@@ -16,7 +16,14 @@ import { NextResponse, type NextRequest } from 'next/server';
    de propósito: é a única rota que precisa funcionar tanto pra quem
    não tem conta ainda quanto pra quem já tem — a própria página
    decide o que mostrar. */
-const PUBLIC_PATHS = ['/', '/login', '/cadastro', '/recuperar-senha'];
+/* AUTH-RESET-01: /reset-password precisa ficar público porque o
+   usuário chega ali direto do link de e-mail, ANTES de o navegador
+   trocar o `code` da URL pela sessão de verdade (isso acontece no
+   client, dentro da própria página) — se essa rota exigisse sessão
+   pra passar pelo middleware (que roda no servidor, olhando cookies
+   já existentes), o primeiro request cairia em /login antes mesmo do
+   client ter a chance de processar o link. */
+const PUBLIC_PATHS = ['/', '/login', '/cadastro', '/recuperar-senha', '/reset-password'];
 const PUBLIC_PREFIXES = ['/convite/'];
 
 export async function updateSession(request: NextRequest) {

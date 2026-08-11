@@ -6,6 +6,7 @@
    já usada por window.__supabaseReady em js/supabase.js.
    ============================================================ */
 import { supabase } from './supabase.js';
+import { APP_URL } from './config.js';
 
 function traduzErro(err){
   const code = (err && err.code || '').toLowerCase();
@@ -47,7 +48,11 @@ export async function signOut(){
 
 export async function resetPasswordForEmail(email){
   try{
-    const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin});
+    // AUTH-RESET-01: path explícito (/reset-password), não a raiz —
+    // precisa estar cadastrado nas Redirect URLs do Supabase como
+    // https://app.usemonity.com.br/** (ou equivalente), senão o
+    // Supabase ignora esse valor e volta pra Site URL padrão.
+    const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:`${APP_URL}/reset-password`});
     if(error) return {ok:false,error:traduzErro(error)};
     return {ok:true};
   }catch(e){ return {ok:false,error:traduzErro(e)}; }

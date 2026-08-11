@@ -1,6 +1,7 @@
 'use client';
 
 import { createClient } from '@/lib/supabase/client';
+import { getAppBaseUrl } from '@/lib/url';
 
 /* Portado de js/auth.js (Monity App) — mesmas mensagens, mesmo
    mapeamento de erro, pra quem usa os dois ambientes ver sempre a
@@ -48,7 +49,7 @@ export async function signUp(email: string, password: string, metadata?: Record<
         // URLs" do painel do Supabase (Authentication -> URL
         // Configuration) — sem isso, o Supabase ignora esse valor e
         // volta a usar a Site URL padrão silenciosamente.
-        emailRedirectTo: typeof window !== 'undefined' ? `${window.location.origin}/login` : undefined,
+        emailRedirectTo: `${getAppBaseUrl()}/login`,
       },
     });
     if (error) return { ok: false as const, error: traduzErro(error) };
@@ -83,9 +84,29 @@ export async function signOut() {
 export async function resetPasswordForEmail(email: string) {
   const supabase = createClient();
   try {
+    // AUTH-RESET-01: redirectTo aponta pro path explícito de definir
+    // nova senha, não pra raiz do Pro — precisa estar cadastrado nas
+    // Redirect URLs do Supabase (Authentication -> URL Configuration)
+    // como https://pro.usemonity.com.br/** (ou o domínio configurado
+    // em NEXT_PUBLIC_APP_URL), senão o Supabase ignora esse valor.
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
+      redirectTo: `${getAppBaseUrl()}/reset-password`,
     });
+    if (error) return { ok: false as const, error: traduzErro(error) };
+    return { ok: true as const };
+  } catch (e) {
+    return { ok: false as const, error: traduzErro(e) };
+  }
+}
+
+/* Usada em /reset-password, depois que o usuário chega pelo link do
+   e-mail — a sessão de recuperação já foi estabelecida pelo próprio
+   client (detectSessionInUrl, padrão do @supabase/ssr), então
+   updateUser() já opera sobre ela sem nenhum passo extra. */
+export async function updatePassword(password: string) {
+  const supabase = createClient();
+  try {
+    const { error } = await supabase.auth.updateUser({ password });
     if (error) return { ok: false as const, error: traduzErro(error) };
     return { ok: true as const };
   } catch (e) {
