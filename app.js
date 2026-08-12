@@ -205,6 +205,14 @@ let TAB='inicio', SUB=null;
 // a data de hoje aqui, pra sempre acompanhar a virada real do dia).
 let DIARIO_DATE=null;
 function go(tab,sub=null){
+  // Sprint 4 (navegação): Diário/Proteína não são tabs do menu inferior —
+  // sem isso, o gesto/botão voltar nativo do celular (Etapa 8) sairia do
+  // app inteiro em vez de fechar essas telas, porque nunca existia nenhuma
+  // entrada de histórico própria do Monity. Empurra uma entrada só ao
+  // ENTRAR nessas duas telas (não a cada troca de tab comum) — a mesma
+  // hierarquia que "← Início"/"← Diário" já seguem visualmente.
+  const enteringDiario=tab==='diario' && TAB!=='diario' && TAB!=='proteina';
+  const enteringProteina=tab==='proteina' && TAB==='diario';
   closeSheet();
   // Sprint 1 (auditoria de persistência): sair do Diário/Proteína pra
   // qualquer outra tab reseta o dia selecionado — sem isso, voltar ao
@@ -212,7 +220,19 @@ function go(tab,sub=null){
   // anterior que a paciente checou, sem nenhuma pista visual do porquê.
   if(tab!=='diario' && tab!=='proteina') DIARIO_DATE=null;
   TAB=tab;SUB=sub;render();window.scrollTo(0,0);
+  if(enteringDiario||enteringProteina) history.pushState({monityNav:true},'');
 }
+/* Sprint 4 (navegação): único listener de popstate do app — fecha o sheet
+   aberto ou volta pra tela anterior quando o usuário usa o gesto/botão
+   voltar nativo do dispositivo, em vez de deixar o navegador "vazar" pra
+   fora do app (Etapa 8). Não constrói uma pilha de navegação genérica —
+   só reage ao estado atual (SHEET/TAB), o mesmo princípio "recalcula, não
+   guarda" já usado em outros motores do Monity. */
+window.addEventListener('popstate',()=>{
+  if(SHEET){ closeSheet(); return; }
+  if(TAB==='proteina'){ TAB='diario'; SUB=null; render(); window.scrollTo(0,0); return; }
+  if(TAB==='diario'){ TAB='inicio'; SUB=null; DIARIO_DATE=null; render(); window.scrollTo(0,0); return; }
+});
 
 /* ---------- Tema claro/escuro ---------- */
 let THEME=(store.get('compasso_theme_v1')||'dark');
@@ -577,6 +597,7 @@ function diarioView(){
   const glasses=Math.round((L.agua||0)/0.25);
   const metaGlasses=Math.round(S.profile.metaAgua/0.25);
   return `
+  <button class="btn-pill btn-sm ghost neutral" onclick="go('inicio')" style="margin-bottom:12px">${icon('chevron',false,true)} Início</button>
   <div class="scr-title">${isToday?'Diário de hoje':'Diário'}</div>
   <div class="between" style="margin-bottom:2px">
     <button type="button" class="cal-nav" onclick="diarioNav(-1)" aria-label="Dia anterior">${CAL_CHEV_L}</button>
@@ -1039,7 +1060,7 @@ function buildNotifStatus(){
    SHEETS (modais de registro)
    ============================================================ */
 let SHEET=null, tmp={};
-function openSheet(id){SHEET=id;tmp={};renderSheet();}
+function openSheet(id){SHEET=id;tmp={};renderSheet();history.pushState({monityNav:true},'');}
 function closeSheet(){const b=document.getElementById('bd');if(b)b.remove();SHEET=null;}
 function renderSheet(){
   let old=document.getElementById('bd'); if(old)old.remove();
@@ -1064,7 +1085,7 @@ function sheetBody(id){
     tmp.weekStart=tmp.weekStart||apMonday(tmp.date);
     tmp.humor=tmp.humor||todayLog().humor||0;
     const meds=['Ozempic','Wegovy','Mounjaro','Zepbound','Saxenda','Outro'];
-    const medIdx=Math.max(0,meds.indexOf(S.profile.medicamento));
+    const {idx:medIdx,custom:medCustom}=comboIndexOrOutro(meds,S.profile.medicamento);
     return `<div class="ap-head">
         <button type="button" class="ap-back" onclick="closeSheet()" aria-label="Fechar">${CAL_CHEV_L}</button>
         <span class="ap-title">Nova aplicação</span>
@@ -1073,8 +1094,9 @@ function sheetBody(id){
       ${apCalendarHTML()}
       <div class="glass-field">
         <label>Medicamento</label>
-        ${comboField('ap-med','pill',meds.map(m=>({value:m,label:m})),medIdx)}
+        ${comboField('ap-med','pill',meds.map(m=>({value:m,label:m})),medIdx,"bindOutroToggle('ap-med')")}
       </div>
+      ${outroField('ap-med','ex: Retatrutida',medCustom)}
       <div class="glass-field"><label for="ap-dose">Dose aplicada</label>
         <label class="field-wrap" for="ap-dose"><input id="ap-dose" value="${esc(S.profile.doseAtual)}" inputmode="decimal" style="font-size:19px;font-weight:600" placeholder="0,0"><span style="color:var(--tx-3);font-size:13px;white-space:nowrap">${esc(S.profile.unidade)}</span></label>
       </div>
@@ -1096,7 +1118,8 @@ function sheetBody(id){
       <button class="btn-pill block" onclick="saveApp()">Salvar aplicação</button>`;
   }
   if(id==='pesar'){
-    return `<h2>Nova pesagem</h2><p class="sub">Peso, medidas e uma foto (opcional).</p>
+    return `<div class="ap-head"><button type="button" class="ap-back" onclick="closeSheet()" aria-label="Fechar">${CAL_CHEV_L}</button><span class="ap-title">Nova pesagem</span><span class="ap-head-spacer"></span></div>
+      <p class="sub">Peso, medidas e uma foto (opcional).</p>
       <div class="glass-field-2"><div class="glass-field"><label for="pw-date">Data</label><label class="field-wrap" for="pw-date"><input type="date" id="pw-date" value="${todayISO()}"></label></div>
       <div class="glass-field"><label for="pw-peso">Peso (kg)</label><label class="field-wrap" for="pw-peso"><input id="pw-peso" inputmode="decimal" placeholder="${nf(currentWeight())}"></label></div></div>
       <div id="pw-hint" style="font-size:12px;color:var(--warn2);margin:-10px 0 14px;display:none"></div>
@@ -1110,7 +1133,8 @@ function sheetBody(id){
       <button id="pw-save-btn" class="btn-pill block" onclick="savePesagem()">Salvar pesagem</button>`;
   }
   if(id==='caneta'){
-    return `<h2>Controle da caneta</h2><p class="sub">Acompanhe quantas aplicações ainda restam.</p>
+    return `<div class="ap-head"><button type="button" class="ap-back" onclick="closeSheet()" aria-label="Fechar">${CAL_CHEV_L}</button><span class="ap-title">Controle da caneta</span><span class="ap-head-spacer"></span></div>
+      <p class="sub">Acompanhe quantas aplicações ainda restam.</p>
       <div class="glass-field-2"><div class="glass-field"><label for="pn-cap">Capacidade (mg)</label><label class="field-wrap" for="pn-cap"><input id="pn-cap" inputmode="decimal" value="${S.pen.capacidadeMg||''}" placeholder="ex: 60"></label></div>
       <div class="glass-field"><label for="pn-dose">Dose semanal (mg)</label><label class="field-wrap" for="pn-dose"><input id="pn-dose" inputmode="decimal" value="${S.pen.doseMg||''}" placeholder="ex: 7,5"></label></div></div>
       <div class="glass-field"><label for="pn-used">Aplicações já feitas com esta caneta</label><label class="field-wrap" for="pn-used"><input id="pn-used" inputmode="numeric" value="${S.pen.usadas||0}"></label></div>
@@ -1118,22 +1142,26 @@ function sheetBody(id){
   }
   if(id==='exame'){
     const tipos=['Hemoglobina glicada','Colesterol total','Triglicerídeos','Vitamina D','Vitamina B12','Ferritina','TSH','Outro'];
-    return `<h2>Novo exame</h2><p class="sub">Guarde o resultado para acompanhar a evolução.</p>
-      <div class="glass-field"><label for="ex-tipo">Exame</label><label class="field-wrap" for="ex-tipo"><select id="ex-tipo">${tipos.map(t=>`<option>${t}</option>`).join('')}</select></label></div>
+    return `<div class="ap-head"><button type="button" class="ap-back" onclick="closeSheet()" aria-label="Fechar">${CAL_CHEV_L}</button><span class="ap-title">Novo exame</span><span class="ap-head-spacer"></span></div>
+      <p class="sub">Guarde o resultado para acompanhar a evolução.</p>
+      <div class="glass-field"><label for="ex-tipo">Exame</label><label class="field-wrap" for="ex-tipo"><select id="ex-tipo" onchange="bindOutroToggle('ex-tipo')">${tipos.map(t=>`<option>${t}</option>`).join('')}</select></label></div>
+      ${outroField('ex-tipo','ex: Ferro sérico')}
       <div class="glass-field-2"><div class="glass-field"><label for="ex-date">Data</label><label class="field-wrap" for="ex-date"><input type="date" id="ex-date" value="${todayISO()}"></label></div>
       <div class="glass-field"><label for="ex-val">Resultado</label><label class="field-wrap" for="ex-val"><input id="ex-val" placeholder="ex: 5,4%"></label></div></div>
       <button class="btn-pill block" onclick="saveExame()">Salvar exame</button>`;
   }
   if(id==='compromisso'){
     const tipos=['Consulta','Exame','Retorno','Renovar receita','Comprar caneta'];
-    return `<h2>Novo compromisso</h2><p class="sub">Nunca perca um retorno ou uma receita vencendo.</p>
+    return `<div class="ap-head"><button type="button" class="ap-back" onclick="closeSheet()" aria-label="Fechar">${CAL_CHEV_L}</button><span class="ap-title">Novo compromisso</span><span class="ap-head-spacer"></span></div>
+      <p class="sub">Nunca perca um retorno ou uma receita vencendo.</p>
       <div class="glass-field"><label for="cp-tipo">Tipo</label><label class="field-wrap" for="cp-tipo"><select id="cp-tipo">${tipos.map(t=>`<option>${t}</option>`).join('')}</select></label></div>
       <div class="glass-field"><label for="cp-date">Data</label><label class="field-wrap" for="cp-date"><input type="date" id="cp-date" value="${todayISO()}"></label></div>
       <div class="glass-field"><label for="cp-obs">Observação</label><label class="field-wrap" for="cp-obs"><input id="cp-obs" placeholder="opcional"></label></div>
       <button class="btn-pill block" onclick="saveCompromisso()">Agendar</button>`;
   }
   if(id==='bio'){
-    return `<h2>Nova bioimpedância</h2><p class="sub">Preencha os campos que sua balança ou exame informar. Todos são opcionais.</p>
+    return `<div class="ap-head"><button type="button" class="ap-back" onclick="closeSheet()" aria-label="Fechar">${CAL_CHEV_L}</button><span class="ap-title">Nova bioimpedância</span><span class="ap-head-spacer"></span></div>
+      <p class="sub">Preencha os campos que sua balança ou exame informar. Todos são opcionais.</p>
       <div class="glass-field"><label for="bi-date">Data</label><label class="field-wrap" for="bi-date"><input type="date" id="bi-date" value="${todayISO()}"></label></div>
       <div class="glass-field-2"><div class="glass-field"><label for="bi-gordura">Gordura corporal (%)</label><label class="field-wrap" for="bi-gordura"><input id="bi-gordura" inputmode="decimal" placeholder="ex: 35,1"></label></div>
       <div class="glass-field"><label for="bi-massaMagraPct">Massa muscular (%)</label><label class="field-wrap" for="bi-massaMagraPct"><input id="bi-massaMagraPct" inputmode="decimal" placeholder="ex: 58,0"></label></div></div>
@@ -1314,7 +1342,8 @@ function configuracoesView(){
   const p=S.profile, ic=obIcon;
   const meds=['Ozempic','Wegovy','Mounjaro','Zepbound','Saxenda','Outro'];
   const medIdx=Math.max(0,meds.indexOf(p.medicamento));
-  return `<h2>Configurações</h2><p class="sub">Seu perfil, preferências e dados em um só lugar.</p>
+  return `<div class="ap-head"><button type="button" class="ap-back" onclick="closeSheet()" aria-label="Fechar">${CAL_CHEV_L}</button><span class="ap-title">Configurações</span><span class="ap-head-spacer"></span></div>
+    <p class="sub">Seu perfil, preferências e dados em um só lugar.</p>
 
     ${cfgGroup('Assinatura',cfgAssinaturaSecao())}
 
@@ -1378,7 +1407,9 @@ function apSetHumor(n){
 
 /* ---------- saves ---------- */
 function saveApp(){
-  const date=tmp.date||todayISO(), dose=val('ap-dose'), med=val('ap-med'), local=tmp.local, obs=val('ap-obs');
+  const date=tmp.date||todayISO(), dose=val('ap-dose'), local=tmp.local, obs=val('ap-obs');
+  if(val('ap-med')==='Outro'&&!val('ap-med-outro').trim()){toast('Informe o nome do medicamento/caneta');return;}
+  const med=valWithOutro('ap-med');
   if(!date||!dose){toast('Preencha data e dose');return;}
   S.applications.push({id:crypto.randomUUID(),date,dose,medicamento:med,local,obs});
   if(document.getElementById('ap-pen').checked && S.pen.capacidadeMg) S.pen.usadas=(S.pen.usadas||0)+1;
@@ -1412,7 +1443,9 @@ function savePen(){
   save();closeSheet();toast('Caneta atualizada');render();
 }
 function saveExame(){
-  const tipo=val('ex-tipo'),date=val('ex-date'),valor=val('ex-val');
+  const date=val('ex-date'),valor=val('ex-val');
+  if(val('ex-tipo')==='Outro'&&!val('ex-tipo-outro').trim()){toast('Informe o nome do exame');return;}
+  const tipo=valWithOutro('ex-tipo');
   if(!valor){toast('Informe o resultado');return;}
   S.exams.push({id:crypto.randomUUID(),tipo,date,valor});save();closeSheet();toast('Exame guardado');render();
 }
@@ -1628,15 +1661,38 @@ function obIcon(name){return `<svg width="18" height="18" viewBox="0 0 24 24" fi
 const OB_CHEV_DOWN='<svg class="csel-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
 
 /* combobox customizado — troca o <select> nativo por um painel próprio, mantendo o <select> real (oculto) como dono do valor */
-function comboField(id,iconName,options,selectedIndex){
+function comboField(id,iconName,options,selectedIndex,onchangeAttr){
   const sel=options[selectedIndex]||options[0];
   return `<div class="csel">
     <button type="button" class="field-wrap csel-trigger" onclick="toggleCombo('${id}')">
       ${iconName?obIcon(iconName):''}<span class="csel-value" id="cselval-${id}">${esc(sel.label)}</span>${OB_CHEV_DOWN}
     </button>
-    <select id="${id}" class="csel-native" tabindex="-1">${options.map((o,i)=>`<option value="${esc(o.value)}" ${i===selectedIndex?'selected':''}>${esc(o.label)}</option>`).join('')}</select>
+    <select id="${id}" class="csel-native" tabindex="-1"${onchangeAttr?` onchange="${onchangeAttr}"`:''}>${options.map((o,i)=>`<option value="${esc(o.value)}" ${i===selectedIndex?'selected':''}>${esc(o.label)}</option>`).join('')}</select>
     <div class="csel-panel" id="cselpanel-${id}">${options.map((o,i)=>`<div class="csel-opt ${i===selectedIndex?'sel':''}" onclick="pickCombo('${id}',${i})">${esc(o.label)}</div>`).join('')}</div>
   </div>`;
+}
+/* opção "Outro" personalizável — campo condicional reutilizado em Exame e Medicamento/caneta.
+   Quando o select está em "Outro", o texto digitado aqui é o valor real salvo (nunca o literal "Outro"). */
+function outroField(baseId,placeholder,value){
+  const visible=!!value;
+  return `<div class="glass-field" id="${baseId}-outro-wrap" style="${visible?'':'display:none;'}margin-top:8px"><label for="${baseId}-outro">Qual?</label>
+    <label class="field-wrap" for="${baseId}-outro"><input id="${baseId}-outro" placeholder="${esc(placeholder)}" value="${esc(value||'')}"></label></div>`;
+}
+function bindOutroToggle(baseId){
+  const sel=document.getElementById(baseId), wrap=document.getElementById(baseId+'-outro-wrap');
+  if(!sel||!wrap) return;
+  const show=sel.value==='Outro', input=document.getElementById(baseId+'-outro');
+  wrap.style.display=show?'':'none';
+  if(show) input.focus(); else input.value='';
+}
+function valWithOutro(baseId){
+  const v=val(baseId);
+  return v==='Outro'?val(baseId+'-outro'):v;
+}
+function comboIndexOrOutro(options,value){
+  const idx=options.indexOf(value);
+  if(idx>=0) return {idx,custom:''};
+  return {idx:options.indexOf('Outro'),custom:value||''};
 }
 /* campo de data customizado — <input type=date> real (oculto) + calendário próprio */
 function dateFieldCustom(id,iconName,isoValue){
@@ -1678,10 +1734,11 @@ function obView(){
         <label class="field-wrap" for="o-nome">${ic('user')}<input id="o-nome" placeholder="Seu nome"></label></div>
       <div class="glass-field-2">
         <div class="glass-field"><label>Medicamento</label>
-          ${comboField('o-med','',['Mounjaro','Ozempic','Wegovy','Zepbound','Saxenda','Outro'].map(m=>({value:m,label:m})),0)}</div>
+          ${comboField('o-med','',['Mounjaro','Ozempic','Wegovy','Zepbound','Saxenda','Outro'].map(m=>({value:m,label:m})),0,"bindOutroToggle('o-med')")}</div>
         <div class="glass-field"><label for="o-dose">Dose atual (mg)</label>
           <label class="field-wrap" for="o-dose"><input id="o-dose" placeholder="ex: 7,5" inputmode="decimal"></label></div>
       </div>
+      ${outroField('o-med','ex: Retatrutida')}
       <div class="glass-field"><label>Dia da aplicação</label>
         ${comboField('o-dia','cal',WD.map((d,i)=>({value:String(i),label:d})),5)}</div>
       <div class="glass-field-2">
@@ -1804,6 +1861,7 @@ function startNew(){
   const atual=anterior?numBR(val('o-atual')):null;
   const hoje=todayISO();
   const dataInicio=val('o-data')||hoje;
+  if(val('o-med')==='Outro'&&!val('o-med-outro').trim()){toast('Informe o nome do medicamento/caneta');return;}
   if(!pini||!pmeta||!alt){toast('Preencha peso inicial, meta e altura');return;}
   if(anterior&&!atual){toast('Preencha seu peso atual');return;}
   if(dataInicio>hoje){toast('A data de início do tratamento não pode ser no futuro');return;}
@@ -1813,7 +1871,7 @@ function startNew(){
   const ultapl=anterior?(val('o-ultapl')||null):null;
   if(ultapl&&ultapl>hoje){toast('A data da última aplicação não pode ser no futuro');return;}
   if(ultapl&&ultapl<dataInicio){toast('A data da última aplicação não pode ser anterior ao início do tratamento');return;}
-  const p={nome,medicamento:val('o-med'),doseAtual:val('o-dose')||'—',unidade:'mg',
+  const p={nome,medicamento:valWithOutro('o-med'),doseAtual:val('o-dose')||'—',unidade:'mg',
     diaAplicacao:parseInt(val('o-dia')),dataInicio,
     pesoInicial:pini,pesoMeta:pmeta,altura:alt,metaAgua:3,metaProteina:100,
     monityStartDate:hoje,
