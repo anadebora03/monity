@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AuthShell, ErrorText } from '@/components/AuthShell';
 import { Input } from '@/components/ui/Input';
@@ -13,36 +13,40 @@ import { updatePassword, verifyRecoveryToken } from '@/lib/auth';
    pro/app/page.tsx, que cobre o caso do Supabase ignorar o
    redirectTo por falta de Redirect URL cadastrada).
 
-   AUTH-RESET-01, causa raiz real: o link padrão do Supabase gera um
-   `code` PKCE que só pode ser trocado por sessão no MESMO navegador
-   que chamou resetPasswordForEmail() — abrir o e-mail em outro
-   aparelho (pedir no computador, abrir no celular, o caso mais comum
-   de todos) quebra a troca na hora. Trocamos o template de e-mail
-   (Supabase, Authentication -> Email Templates -> Reset Password)
-   pra usar token_hash em vez do link padrão — verifyOtp() com
-   token_hash não depende de nada salvo no navegador de origem,
-   funciona em qualquer dispositivo. */
+   AUTH-RESET-01: template de e-mail usa token_hash (verifyOtp) em vez
+   do `code` PKCE padrão do Supabase, porque o code fica preso ao
+   navegador que pediu a recuperação (quebra ao abrir em outro
+   aparelho). token_hash funciona em qualquer navegador — MAS é de uso
+   único, e por isso não pode ser consumido automaticamente ao
+   carregar a página: muitos provedores de e-mail (Microsoft 365 "Safe
+   Links", alguns webmails) pré-visitam todo link do e-mail pra
+   escanear segurança ANTES do clique real da pessoa — se
+   verifyRecoveryToken() rodasse sozinho num useEffect ao montar, esse
+   "clique robô" consumiria o token antes do usuário nunca ver a tela.
+   Um scanner automatizado faz um GET simples na página e não clica em
+   botões — por isso o consumo do token fica atrás de um clique
+   explícito ("Continuar"), não do carregamento da página. */
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
+  const tokenHash = searchParams.get('token_hash');
+
+  const [confirmando, setConfirmando] = useState(false);
   const [prontoParaTrocar, setProntoParaTrocar] = useState(false);
-  const [linkInvalido, setLinkInvalido] = useState(false);
+  const [linkInvalido, setLinkInvalido] = useState(!tokenHash);
   const [senha, setSenha] = useState('');
   const [confirmar, setConfirmar] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [sucesso, setSucesso] = useState(false);
 
-  useEffect(() => {
-    const tokenHash = searchParams.get('token_hash');
-    if (!tokenHash) {
-      setLinkInvalido(true);
-      return;
-    }
-    verifyRecoveryToken(tokenHash).then((res) => {
-      if (res.ok) setProntoParaTrocar(true);
-      else setLinkInvalido(true);
-    });
-  }, [searchParams]);
+  async function confirmarLink() {
+    if (!tokenHash) return;
+    setConfirmando(true);
+    const res = await verifyRecoveryToken(tokenHash);
+    setConfirmando(false);
+    if (res.ok) setProntoParaTrocar(true);
+    else setLinkInvalido(true);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -89,6 +93,16 @@ function ResetPasswordForm() {
     );
   }
 
+  if (!prontoParaTrocar) {
+    return (
+      <AuthShell title="Redefinir senha" subtitle="Confirme para continuar com a redefinição da sua senha.">
+        <Button onClick={confirmarLink} disabled={confirmando} className="w-full">
+          {confirmando ? 'Confirmando…' : 'Continuar'}
+        </Button>
+      </AuthShell>
+    );
+  }
+
   return (
     <AuthShell title="Redefinir senha" subtitle="Crie uma nova senha para acessar sua conta Monity Pro.">
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -98,7 +112,6 @@ function ResetPasswordForm() {
           type="password"
           autoComplete="new-password"
           required
-          disabled={!prontoParaTrocar}
           value={senha}
           onChange={(e) => setSenha(e.target.value)}
         />
@@ -107,12 +120,11 @@ function ResetPasswordForm() {
           type="password"
           autoComplete="new-password"
           required
-          disabled={!prontoParaTrocar}
           value={confirmar}
           onChange={(e) => setConfirmar(e.target.value)}
         />
-        <Button type="submit" disabled={loading || !prontoParaTrocar} className="w-full">
-          {loading ? 'Salvando…' : !prontoParaTrocar ? 'Confirmando link…' : 'Redefinir senha'}
+        <Button type="submit" disabled={loading} className="w-full">
+          {loading ? 'Salvando…' : 'Redefinir senha'}
         </Button>
       </form>
     </AuthShell>

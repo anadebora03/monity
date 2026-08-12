@@ -2425,9 +2425,17 @@ function welcomeView(){
    .glass-card, .glass-field, obIcon, .btn-pill) — nenhum
    componente novo.
    ============================================================ */
-let AUTH_SCREEN='welcome'; // 'welcome' | 'login' | 'cadastro' | 'recuperar' | 'nova-senha'
+let AUTH_SCREEN='welcome'; // 'welcome' | 'login' | 'cadastro' | 'recuperar' | 'confirmar-recuperacao' | 'nova-senha'
 let AUTH_MSG=null; // mensagem de sucesso exibida no lugar do formulário (ex.: "confira seu e-mail")
 let CURRENT_EMAIL=null; // e-mail da sessão ativa, usado só pra exibir/pré-preencher em Configurações → Conta
+// AUTH-RESET-01: token_hash do link de recuperação, guardado aqui em vez
+// de consumido sozinho no boot() — scanners de segurança de e-mail
+// (Microsoft 365 "Safe Links" etc.) pré-visitam todo link do e-mail
+// automaticamente, e como o token só vale uma vez, isso o consumiria
+// antes do clique real da pessoa. Só é trocado por sessão quando o
+// usuário clica em "Continuar" (doConfirmarRecuperacao()) — um scanner
+// automatizado carrega a página, mas não clica em botões.
+let PENDING_RECOVERY_TOKEN=null;
 let OB_MARCO=null; // null (ainda não respondeu) | 'novo' | 'anterior' — Sprint 014, Marco Zero
 function obSetMarco(v){OB_MARCO=v;render();}
 
@@ -2506,6 +2514,16 @@ function recuperarSenhaView(){
   </div>`;
 }
 
+function confirmarRecuperacaoView(){
+  return `<div class="ob">
+    <div class="glow-wrap ob-icon">${logoHeroSVG(56)}</div>
+    <h1>Redefinir senha</h1>
+    <p class="lead">Confirme para continuar com a redefinição da sua senha.</p>
+    <div class="glass-card">
+      <button class="btn-pill block" id="cr-btn" onclick="doConfirmarRecuperacao()">Continuar ${AUTH_ARROW}</button>
+    </div>
+  </div>`;
+}
 function novaSenhaView(){
   return `<div class="ob">
     <div class="glow-wrap ob-icon">${logoHeroSVG(56)}</div>
@@ -2522,7 +2540,7 @@ function novaSenhaView(){
 }
 
 function renderWelcome(){
-  const views={welcome:welcomeView,login:loginView,cadastro:cadastroView,recuperar:recuperarSenhaView,'nova-senha':novaSenhaView};
+  const views={welcome:welcomeView,login:loginView,cadastro:cadastroView,recuperar:recuperarSenhaView,'confirmar-recuperacao':confirmarRecuperacaoView,'nova-senha':novaSenhaView};
   const view=views[AUTH_SCREEN]||welcomeView;
   document.getElementById('app').innerHTML = view();
 }
@@ -2577,6 +2595,16 @@ async function doResetPassword(){
     if(!r.ok){ toast(r.error); return; }
     AUTH_MSG=`Enviamos um link de recuperação para ${email}. Abra seu e-mail para redefinir sua senha.`;
     AUTH_SCREEN='recuperar'; renderWelcome();
+  });
+}
+async function doConfirmarRecuperacao(){
+  if(!PENDING_RECOVERY_TOKEN){ toast('Link inválido ou expirado. Peça um novo link de recuperação de senha.'); AUTH_SCREEN='recuperar'; renderWelcome(); return; }
+  await withAuthBtn('cr-btn','Confirmando…',async()=>{
+    const auth=await window.__authReady;
+    const r=await auth.verifyRecoveryToken(PENDING_RECOVERY_TOKEN);
+    PENDING_RECOVERY_TOKEN=null;
+    if(!r.ok){ toast(r.error); AUTH_SCREEN='recuperar'; renderWelcome(); return; }
+    AUTH_SCREEN='nova-senha'; renderWelcome();
   });
 }
 async function doUpdatePassword(){
@@ -2805,18 +2833,16 @@ async function boot(){
   // AUTH-RESET-01: link de recuperação de senha, formato token_hash
   // (ver js/auth.js:verifyRecoveryToken — não é mais o `code` PKCE
   // padrão, que quebrava ao abrir o e-mail num aparelho diferente de
-  // quem pediu a recuperação). Processado uma vez só no boot, antes
-  // de qualquer decisão de sessão normal — senão o parâmetro na URL
-  // fica "pendurado" e pode confundir um refresh futuro.
+  // quem pediu a recuperação). Só GUARDA o token aqui — nunca troca
+  // por sessão automaticamente (ver comentário de PENDING_RECOVERY_TOKEN
+  // acima, e doConfirmarRecuperacao()). A URL é limpa na hora pra não
+  // ficar "pendurada" e confundir um refresh futuro.
   const urlParams = new URLSearchParams(window.location.search);
   const tokenHash = urlParams.get('token_hash');
   if(tokenHash && urlParams.get('type')==='recovery'){
     history.replaceState(null,'',window.location.pathname);
-    const auth = await window.__authReady;
-    const r = await auth.verifyRecoveryToken(tokenHash);
-    if(r.ok){ AUTH_SCREEN='nova-senha'; renderWelcome(); return; }
-    AUTH_MSG = null;
-    toast(r.error);
+    PENDING_RECOVERY_TOKEN = tokenHash;
+    AUTH_SCREEN='confirmar-recuperacao'; renderWelcome(); return;
   }
   if(AUTH_SCREEN==='nova-senha'){ renderWelcome(); return; }
   const temSessao = await verificarSessao();
