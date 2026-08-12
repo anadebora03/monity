@@ -586,15 +586,15 @@ function diarioView(){
   ${isToday?'':'<p class="center" style="margin:0 0 12px"><button type="button" class="btn-pill btn-sm ghost neutral" onclick="diarioIrHoje()">Voltar para hoje</button></p>'}
 
   <div class="gcard">
-    <h3>Como você está?</h3>
-    <div class="mood-row">
+    <div class="between"><h3 class="mb0">Como você está?</h3>${L.humor?`<span class="delta2 down">✓ Salvo</span>`:''}</div>
+    <div class="mood-row" style="margin-top:12px">
       ${HUMORS.map((e,i)=>`<button type="button" class="mood-btn ${L.humor===i+1?'active':''}" onclick="setHumor(${i+1})" style="font-size:22px">${e}</button>`).join('')}
     </div>
   </div>
 
   <div class="gcard">
-    <h3>Sintomas</h3>
-    <div class="chips">
+    <div class="between"><h3 class="mb0">Sintomas</h3>${L.sintomas&&L.sintomas.length?`<span class="delta2 down">✓ Salvo</span>`:''}</div>
+    <div class="chips" style="margin-top:12px">
       ${SINTOMAS.map(s=>`<button class="chip-glass ${s!=='Sem sintomas'?'rose':''} ${L.sintomas.includes(s)?'active':''}" onclick="toggleSint('${s}')">${s}</button>`).join('')}
     </div>
   </div>
@@ -2094,7 +2094,9 @@ function proteinaView(){
       <div class="between" onclick="toggleProtCard('${s.id}')">
         <div class="row"><span class="pemoji">${s.emoji}</span>
           <div><div style="font-weight:800;color:var(--tx-1)">${s.nome}</div>
-          <div class="muted" style="font-size:12px">${q?qtxt+' · '+g+' g proteína':'toque para adicionar'}</div></div></div>
+          <div class="muted" style="font-size:12px">${q?qtxt+' · '+g+' g proteína':'toque para adicionar'}</div>
+          ${q&&!open?`<span class="delta2 down" style="margin-top:4px">✓ Registrado — toque para editar</span>`:''}
+          </div></div>
         <span class="row" style="gap:2px;font-weight:800;color:var(--accent)">${g?g+' g':''}${icon('chevron')}</span>
       </div>
       ${open?`<div class="protbody">${s.id==='ovo'?eggControl(L):gramControl(s,L)}</div>`:''}
@@ -2119,7 +2121,9 @@ function proteinaView(){
     <div class="between" onclick="toggleProtCard('outros')">
       <div class="row"><span class="pemoji">➕</span>
         <div><div style="font-weight:800;color:var(--tx-1)">Outras fontes</div>
-        <div class="muted" style="font-size:12px">${outQ?outQ+' g proteína':'whey, leguminosas, tofu…'}</div></div></div>
+        <div class="muted" style="font-size:12px">${outQ?outQ+' g proteína':'whey, leguminosas, tofu…'}</div>
+        ${outQ&&protOpen!=='outros'?`<span class="delta2 down" style="margin-top:4px">✓ Registrado — toque para editar</span>`:''}
+        </div></div>
       <span class="row" style="gap:2px;font-weight:800;color:var(--accent)">${outQ?outQ+' g':''}${icon('chevron')}</span>
     </div>
     ${protOpen==='outros'?`<div class="protbody">${outrosControl(L)}</div>`:''}
