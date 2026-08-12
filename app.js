@@ -200,7 +200,19 @@ function blankState(p,firstWeighing){
    ROUTER / RENDER
    ============================================================ */
 let TAB='inicio', SUB=null;
-function go(tab,sub=null){closeSheet();TAB=tab;SUB=sub;render();window.scrollTo(0,0);}
+// Sprint 1 (auditoria de persistência): dia sendo visualizado/editado no
+// Diário e na tela de Proteína — null significa "hoje" (nunca fixamos
+// a data de hoje aqui, pra sempre acompanhar a virada real do dia).
+let DIARIO_DATE=null;
+function go(tab,sub=null){
+  closeSheet();
+  // Sprint 1 (auditoria de persistência): sair do Diário/Proteína pra
+  // qualquer outra tab reseta o dia selecionado — sem isso, voltar ao
+  // Diário depois de visitar outra tela ficaria "preso" no dia
+  // anterior que a paciente checou, sem nenhuma pista visual do porquê.
+  if(tab!=='diario' && tab!=='proteina') DIARIO_DATE=null;
+  TAB=tab;SUB=sub;render();window.scrollTo(0,0);
+}
 
 /* ---------- Tema claro/escuro ---------- */
 let THEME=(store.get('compasso_theme_v1')||'dark');
@@ -534,20 +546,44 @@ const APET=['Muito baixo','Baixo','Normal','Alto','Muito alto'];
 const FOME=['Ansiedade','Tédio','Fome','Tristeza','Nenhuma'];
 const HUMORS=['😞','😕','😐','🙂','😄'];
 
-function todayLog(){
-  const iso=todayISO();
+/* ensureDayLog(iso) — mesma lógica que já existia só pra "hoje"
+   (todayLog()), generalizada pra qualquer dia (Sprint 1: seletor de
+   dia no Diário). Cria o registro do dia se não existir ainda — igual
+   já acontecia pra hoje, mesmo comportamento, sem mudar o esquema de
+   dados nem inventar um caminho de leitura paralelo. */
+function ensureDayLog(iso){
   if(!S.dailyLogs[iso]) S.dailyLogs[iso]={sintomas:[],agua:0,proteina:0,exercicios:[],humor:0,apetite:'',fomeEmocional:''};
   const L=S.dailyLogs[iso];
   if(!L.prot) L.prot={ovo:0,frango:0,carne:0,peixe:0,queijo:0,iogurte:0,leite:0,outros:L.proteina||0};
   return L;
 }
+function todayLog(){ return ensureDayLog(todayISO()); }
+// Sprint 1: dia atualmente selecionado no Diário/Proteína — DIARIO_DATE
+// null sempre significa "hoje" (nunca fixa a data, acompanha a virada
+// real do dia mesmo com o app aberto).
+function diarioSelectedDate(){ return DIARIO_DATE||todayISO(); }
+function diarioLog(){ return ensureDayLog(diarioSelectedDate()); }
+function diarioNav(dir){
+  const d=parseISO(diarioSelectedDate()); d.setDate(d.getDate()+dir);
+  const iso=todayISO(d);
+  if(iso>todayISO()) return; // nunca deixa navegar pro futuro
+  DIARIO_DATE = iso===todayISO() ? null : iso;
+  render();
+}
+function diarioIrHoje(){ DIARIO_DATE=null; render(); }
 function diarioView(){
-  const L=todayLog();
+  const iso=diarioSelectedDate(), isToday=iso===todayISO();
+  const L=diarioLog();
   const glasses=Math.round((L.agua||0)/0.25);
   const metaGlasses=Math.round(S.profile.metaAgua/0.25);
   return `
-  <div class="scr-title">Diário de hoje</div>
-  <div class="scr-sub">${WD[new Date().getDay()]}, ${fmtBRy(todayISO())} · leva menos de um minuto.</div>
+  <div class="scr-title">${isToday?'Diário de hoje':'Diário'}</div>
+  <div class="between" style="margin-bottom:2px">
+    <button type="button" class="cal-nav" onclick="diarioNav(-1)" aria-label="Dia anterior">${CAL_CHEV_L}</button>
+    <span class="scr-sub" style="margin:0">${WD[parseISO(iso).getDay()]}, ${fmtBRy(iso)}${isToday?' · leva menos de um minuto.':''}</span>
+    <button type="button" class="cal-nav" onclick="diarioNav(1)" aria-label="Próximo dia" ${isToday?'disabled style="opacity:.3"':''}>${CAL_CHEV_R}</button>
+  </div>
+  ${isToday?'':'<p class="center" style="margin:0 0 12px"><button type="button" class="btn-pill btn-sm ghost neutral" onclick="diarioIrHoje()">Voltar para hoje</button></p>'}
 
   <div class="gcard">
     <h3>Como você está?</h3>
@@ -577,7 +613,7 @@ function diarioView(){
   <div class="gcard">
     <div class="between"><h3 class="mb0">Meta proteica</h3><span class="muted" style="font-weight:800">${L.proteina||0} / ${S.profile.metaProteina} g</span></div>
     ${proteinBar(L.proteina||0,S.profile.metaProteina)}
-    <div class="muted" style="font-size:12.5px;margin:2px 0 12px">${Math.round(Math.min(100,(L.proteina||0)/S.profile.metaProteina*100))}% da meta atingida hoje</div>
+    <div class="muted" style="font-size:12.5px;margin:2px 0 12px">${Math.round(Math.min(100,(L.proteina||0)/S.profile.metaProteina*100))}% da meta atingida${isToday?' hoje':' nesse dia'}</div>
     <button class="btn-pill block ghost" onclick="go('proteina')">${icon('plus',true)} Registrar por alimento</button>
   </div>
 
@@ -1515,16 +1551,16 @@ async function confirmarExcluirConta(){
 }
 
 /* ---------- diário actions ---------- */
-function setHumor(n){todayLog().humor=n;save();render();}
-function toggleSint(s){const L=todayLog();
+function setHumor(n){diarioLog().humor=n;save();render();}
+function toggleSint(s){const L=diarioLog();
   if(s==='Sem sintomas'){L.sintomas=L.sintomas.includes(s)?[]:['Sem sintomas'];}
   else{L.sintomas=L.sintomas.filter(x=>x!=='Sem sintomas');
     L.sintomas.includes(s)?L.sintomas=L.sintomas.filter(x=>x!==s):L.sintomas.push(s);}
   save();render();}
-function addWater(d){const L=todayLog();L.agua=Math.max(0,+((L.agua||0)+d).toFixed(2));save();render();}
-function toggleEx(e){const L=todayLog();L.exercicios.includes(e)?L.exercicios=L.exercicios.filter(x=>x!==e):L.exercicios.push(e);save();render();}
-function setApet(a){todayLog().apetite=a;save();render();}
-function setFome(f){todayLog().fomeEmocional=f;save();render();}
+function addWater(d){const L=diarioLog();L.agua=Math.max(0,+((L.agua||0)+d).toFixed(2));save();render();}
+function toggleEx(e){const L=diarioLog();L.exercicios.includes(e)?L.exercicios=L.exercicios.filter(x=>x!==e):L.exercicios.push(e);save();render();}
+function setApet(a){diarioLog().apetite=a;save();render();}
+function setFome(f){diarioLog().fomeEmocional=f;save();render();}
 
 function shareJourney(){
   const txt=document.querySelector('.journey .q')?.innerText||'';
@@ -1831,7 +1867,7 @@ function dropSVG(filled,i){
     <path d="M12 1 C12 1 3 12 3 19 a9 9 0 0 0 18 0 C21 12 12 1 12 1 Z"
       fill="${filled?'var(--accent)':'none'}" stroke="${filled?'var(--accent)':'var(--nv-border-strong)'}" stroke-width="2"/></svg></div>`;
 }
-function setWater(n){const L=todayLog();L.agua=+(n*0.25).toFixed(2);save();render();}
+function setWater(n){const L=diarioLog();L.agua=+(n*0.25).toFixed(2);save();render();}
 
 function bodyMapSVG(last,sel,selectable,premium){
   const zc=premium?'bmzone2':'bmzone';
@@ -2011,8 +2047,8 @@ let protOpen='ovo';
 function protGrams(id,qty){const s=PROT.find(p=>p.id===id);if(!s||!qty)return 0;
   return s.mode==='unit'?qty*s.per:qty/100*s.per100;}
 function computeProtein(L){let t=0;PROT.forEach(s=>{t+=protGrams(s.id,L.prot[s.id]||0);});t+=(L.prot.outros||0);L.proteina=Math.round(t);return L.proteina;}
-function setProt(id,qty){const L=todayLog();L.prot[id]=Math.max(0,+qty||0);computeProtein(L);save();render();}
-function addProtQty(id,d){const L=todayLog();L.prot[id]=Math.max(0,(L.prot[id]||0)+d);computeProtein(L);save();render();}
+function setProt(id,qty){const L=diarioLog();L.prot[id]=Math.max(0,+qty||0);computeProtein(L);save();render();}
+function addProtQty(id,d){const L=diarioLog();L.prot[id]=Math.max(0,(L.prot[id]||0)+d);computeProtein(L);save();render();}
 function commitProt(id,v){setProt(id,numBR(v)||0);}
 function toggleProtCard(id){protOpen=protOpen===id?null:id;render();}
 
@@ -2049,7 +2085,8 @@ function outrosControl(L){
     <div class="protresult">${q?`<b>${q} g</b> de outras fontes`:'Whey, leguminosas, tofu, suplementos…'}</div>`;
 }
 function proteinaView(){
-  const L=todayLog(), goal=S.profile.metaProteina, cur=L.proteina||0;
+  const iso=diarioSelectedDate(), isToday=iso===todayISO();
+  const L=diarioLog(), goal=S.profile.metaProteina, cur=L.proteina||0;
   const pct=Math.round(Math.min(100,cur/goal*100));
   const card=s=>{const q=L.prot[s.id]||0, g=Math.round(protGrams(s.id,q)), open=protOpen===s.id;
     const qtxt=q?(s.mode==='unit'?q+' un':nf(q,0)+(s.mode==='ml'?' ml':' g')):'';
@@ -2066,10 +2103,11 @@ function proteinaView(){
   return `
   <button class="btn-pill btn-sm ghost neutral" onclick="go('diario')" style="margin-bottom:12px">${icon('chevron',false,true)} Diário</button>
   <div class="scr-title" style="margin-bottom:4px">Meta proteica</div>
-  <div class="scr-sub">Toque nas fontes que você comeu hoje. O app estima a proteína, sem precisar pesar tudo.</div>
+  <div class="scr-sub">Toque nas fontes que você comeu${isToday?' hoje':' nesse dia'}. O app estima a proteína, sem precisar pesar tudo.</div>
+  ${isToday?'':`<p class="muted" style="margin:2px 0 12px;font-size:13px">${WD[parseISO(iso).getDay()]}, ${fmtBRy(iso)}</p>`}
 
   <div class="protsummary">
-    <div style="font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;opacity:.85;font-weight:700">Proteína consumida hoje</div>
+    <div style="font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;opacity:.85;font-weight:700">Proteína consumida${isToday?' hoje':' nesse dia'}</div>
     <div style="font-size:34px;font-weight:800;letter-spacing:-.02em;margin:2px 0">${cur} <span style="font-size:16px;opacity:.85">/ ${goal} g</span></div>
     ${proteinBar(cur,goal)}
     <div style="font-size:13px;opacity:.9;margin-top:6px">${pct}% da meta atingida${cur>=goal?' ✓':''}</div>

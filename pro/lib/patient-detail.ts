@@ -39,6 +39,13 @@ export type BioRegistro = {
 };
 export type Exame = { date: string; tipo: string | null; valor: string | null };
 export type RegistroSintomas = { date: string; sintomas: string[]; humor: number | null };
+/* Sprint 1 (auditoria de persistência): daily_logs também guarda água e
+   proteína por dia, mas nunca eram buscados aqui — o Pro só lia
+   sintomas/humor. RegistroDiario expõe esses dois campos separadamente
+   de RegistroSintomas (que continua filtrando só dias COM sintomas, um
+   uso diferente) — sem mexer no formato já consumido pela aba de
+   Sintomas. */
+export type RegistroDiario = { date: string; agua: number | null; proteina: number | null; fontesProteina: Record<string, number> | null };
 
 export type TimelineEvent = {
   id: string;
@@ -102,6 +109,7 @@ export type PatientDetail = {
   bio: BioRegistro[];
   exames: Exame[];
   sintomas: RegistroSintomas[];
+  diario: RegistroDiario[];
   compromissos: CompromissoPaciente[];
 
   timeline: TimelineEvent[];
@@ -141,6 +149,7 @@ function vazio(patientId: string): PatientDetail {
     bio: [],
     exames: [],
     sintomas: [],
+    diario: [],
     compromissos: [],
     timeline: [],
     insights: [],
@@ -174,7 +183,7 @@ export async function getPatientDetail(supabase: SupabaseClient, patientId: stri
     supabase.from('applications').select('date, dose, medicamento, local, obs').eq('user_id', patientId).order('date', { ascending: true }),
     supabase.from('bioimpedance').select('date, gordura, massa_magra, musculo, agua, visceral, tmb').eq('user_id', patientId).order('date', { ascending: true }),
     supabase.from('exams').select('date, tipo, valor').eq('user_id', patientId).order('date', { ascending: true }),
-    supabase.from('daily_logs').select('date, sintomas, humor').eq('user_id', patientId).order('date', { ascending: true }),
+    supabase.from('daily_logs').select('date, sintomas, humor, agua, proteina, protein_sources').eq('user_id', patientId).order('date', { ascending: true }),
     supabase.from('compromissos').select('id, data, hora, tipo, status, observacoes').eq('patient_id', patientId).order('data', { ascending: true }),
     supabase.from('planos_terapeuticos').select('id, titulo, categoria, status, created_at, concluido_em').eq('patient_id', patientId).order('created_at', { ascending: true }),
     supabase.from('report_emissions').select('id, periodo_ini, periodo_fim, created_at').eq('patient_id', patientId).order('created_at', { ascending: true }),
@@ -207,6 +216,14 @@ export async function getPatientDetail(supabase: SupabaseClient, patientId: stri
   const sintomas: RegistroSintomas[] = (dailyLogs ?? [])
     .map((l) => ({ date: l.date as string, sintomas: ((l.sintomas as string[] | null) ?? []).filter((s) => s !== 'Sem sintomas'), humor: l.humor as number | null }))
     .filter((l) => l.sintomas.length > 0);
+  const diario: RegistroDiario[] = (dailyLogs ?? [])
+    .map((l) => ({
+      date: l.date as string,
+      agua: (l.agua as number | null) ?? null,
+      proteina: (l.proteina as number | null) ?? null,
+      fontesProteina: (l.protein_sources as Record<string, number> | null) ?? null,
+    }))
+    .filter((l) => l.agua != null || l.proteina != null);
   const compromissos: CompromissoPaciente[] = (compromissosRows ?? []).map((c) => ({
     id: c.id,
     data: c.data,
@@ -485,6 +502,7 @@ export async function getPatientDetail(supabase: SupabaseClient, patientId: stri
     bio: bioRegs,
     exames,
     sintomas,
+    diario,
     compromissos,
     timeline,
     insights,
