@@ -2055,11 +2055,19 @@ function toggleProtCard(id){protOpen=protOpen===id?null:id;render();}
 function proteinBar(cur,goal){const n=10,f=Math.round(Math.min(1,goal?cur/goal:0)*n);
   let s='';for(let i=0;i<n;i++)s+=`<span class="psq ${i<f?'on':''}"></span>`;return `<div class="psqrow">${s}</div>`;}
 
+/* Sprint 3 (feedback de proteína): confirmação inline visível DENTRO do
+   card aberto, não só depois de fechá-lo — cada toque num chip/input já
+   salva na hora (mesmo save() síncrono da Sprint 2), então isso só torna
+   visível o que já é verdade, sem simular nenhuma espera que não existe. */
+function protSalvoInline(q){
+  return q?`<div class="muted" style="font-size:11.5px;margin-top:6px;color:var(--accent-light)">✓ Salvo automaticamente</div>`:'';
+}
 function eggControl(L){
   const q=L.prot.ovo||0; let dots='';
   for(let i=0;i<12;i++)dots+=`<button class="egg ${i<q?'on':''}" onclick="setProt('ovo',${i+1===q?i:i+1})" aria-label="ovo ${i+1}">🥚</button>`;
   return `<div class="eggrow">${dots}</div>
     <div class="protresult"><b>${q} ${q===1?'ovo':'ovos'}</b> ≈ ${q*6} g de proteína</div>
+    ${protSalvoInline(q)}
     <div class="row" style="gap:8px;margin-top:10px">
       <button class="btn-pill btn-sm ghost neutral" style="flex:0 0 64px" onclick="addProtQty('ovo',-1)" aria-label="Remover um ovo">−</button>
       <button class="btn-pill btn-sm ghost" style="flex:1" onclick="addProtQty('ovo',1)">+ 1 ovo</button></div>`;
@@ -2074,7 +2082,8 @@ function gramControl(s,L){
       ${s.unit?`<button class="chip-glass" onclick="addProtQty('${s.id}',${s.unit.g})">+ 1 ${s.unit.label}</button>`:''}
       ${q?`<button class="chip-glass" onclick="setProt('${s.id}',0)">zerar</button>`:''}
     </div>
-    <div class="protresult">${q?`${nf(q,0)} ${u} ≈ <b>${Math.round(protGrams(s.id,q))} g</b> de proteína`:'Adicione a quantidade consumida'}</div>`;
+    <div class="protresult">${q?`${nf(q,0)} ${u} ≈ <b>${Math.round(protGrams(s.id,q))} g</b> de proteína`:'Adicione a quantidade consumida'}</div>
+    ${protSalvoInline(q)}`;
 }
 function outrosControl(L){
   const q=L.prot.outros||0;
@@ -2082,7 +2091,8 @@ function outrosControl(L){
     <label class="field-wrap"><input inputmode="numeric" value="${q||''}" onchange="commitProt('outros',this.value)" placeholder="whey, leguminosas, tofu…"></label></div>
     <div class="chips" style="margin-bottom:12px">${[10,20,30].map(g=>`<button class="chip-glass" onclick="addProtQty('outros',${g})">+ ${g} g</button>`).join('')}
       ${q?`<button class="chip-glass" onclick="setProt('outros',0)">zerar</button>`:''}</div>
-    <div class="protresult">${q?`<b>${q} g</b> de outras fontes`:'Whey, leguminosas, tofu, suplementos…'}</div>`;
+    <div class="protresult">${q?`<b>${q} g</b> de outras fontes`:'Whey, leguminosas, tofu, suplementos…'}</div>
+    ${protSalvoInline(q)}`;
 }
 function proteinaView(){
   const iso=diarioSelectedDate(), isToday=iso===todayISO();
