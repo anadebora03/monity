@@ -1212,14 +1212,15 @@ function avatarBlock(p){
     <input type="file" id="pf-avatar-file" accept="image/*" style="display:none" onchange="onAvatarPicked(this)">
   </div>`;
 }
-function cfgPerfilSecao(p,ic,meds,medIdx){
+function cfgPerfilSecao(p,ic,meds,medIdx,medCustom){
   return avatarBlock(p)+`<div class="glass-field"><label for="pf-nome">Nome</label>
       <label class="field-wrap" for="pf-nome">${ic('user')}<input id="pf-nome" value="${esc(p.nome)}"></label></div>
     <div class="glass-field-2">
-      <div class="glass-field"><label>Medicamento</label>${comboField('pf-med','pill',meds.map(m=>({value:m,label:m})),medIdx)}</div>
+      <div class="glass-field"><label>Medicamento</label>${comboField('pf-med','pill',meds.map(m=>({value:m,label:m})),medIdx,"bindOutroToggle('pf-med')")}</div>
       <div class="glass-field"><label for="pf-dose">Dose atual</label>
         <label class="field-wrap" for="pf-dose"><input id="pf-dose" value="${esc(p.doseAtual)}" inputmode="decimal"><span style="color:var(--tx-3);font-size:13px;white-space:nowrap">${esc(p.unidade)}</span></label></div>
     </div>
+    ${outroField('pf-med','ex: Retatrutida',medCustom)}
     <div class="glass-field"><label>Dia da aplicação</label>${comboField('pf-dia','cal',WD.map((d,i)=>({value:String(i),label:d})),p.diaAplicacao)}</div>
     <div class="glass-field-2">
       <div class="glass-field"><label>Início do tratamento</label>
@@ -1341,13 +1342,13 @@ function cfgContaSecao(ic){
 function configuracoesView(){
   const p=S.profile, ic=obIcon;
   const meds=['Ozempic','Wegovy','Mounjaro','Zepbound','Saxenda','Outro'];
-  const medIdx=Math.max(0,meds.indexOf(p.medicamento));
+  const {idx:medIdx,custom:medCustom}=comboIndexOrOutro(meds,p.medicamento);
   return `<div class="ap-head"><button type="button" class="ap-back" onclick="closeSheet()" aria-label="Fechar">${CAL_CHEV_L}</button><span class="ap-title">Configurações</span><span class="ap-head-spacer"></span></div>
     <p class="sub">Seu perfil, preferências e dados em um só lugar.</p>
 
     ${cfgGroup('Assinatura',cfgAssinaturaSecao())}
 
-    ${cfgGroup('Perfil',cfgPerfilSecao(p,ic,meds,medIdx),'margin-top:14px')}
+    ${cfgGroup('Perfil',cfgPerfilSecao(p,ic,meds,medIdx,medCustom),'margin-top:14px')}
     ${cfgGroup('Preferências',cfgPreferenciasSecao(p,ic))}
 
     <button class="btn-pill block" onclick="savePerfil()">Salvar alterações</button>
@@ -1465,7 +1466,8 @@ function saveBio(){
 }
 function savePerfil(){
   const p=S.profile;
-  p.nome=val('pf-nome')||p.nome; p.medicamento=val('pf-med'); p.doseAtual=val('pf-dose');
+  if(val('pf-med')==='Outro'&&!val('pf-med-outro').trim()){toast('Informe o nome do medicamento/caneta');return;}
+  p.nome=val('pf-nome')||p.nome; p.medicamento=valWithOutro('pf-med'); p.doseAtual=val('pf-dose');
   p.diaAplicacao=parseInt(val('pf-dia')); p.altura=parseInt(val('pf-altura'))||p.altura;
   p.pesoMeta=numBR(val('pf-meta'))||p.pesoMeta; p.metaAgua=numBR(val('pf-agua'))||p.metaAgua;
   p.metaProteina=parseInt(val('pf-prot'))||p.metaProteina;
