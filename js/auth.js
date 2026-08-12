@@ -58,6 +58,22 @@ export async function resetPasswordForEmail(email){
   }catch(e){ return {ok:false,error:traduzErro(e)}; }
 }
 
+/* Template de e-mail "Reset Password" compartilhado entre o Monity App
+   e o Monity Pro (mesmo projeto Supabase) usa {{ .RedirectTo }} (que
+   resolve pro domínio certo em cada app, já que cada um passa seu
+   próprio redirectTo acima) + token_hash/type anexados manualmente —
+   não o {{ .ConfirmationURL }} padrão, que gera um `code` PKCE preso
+   ao navegador que pediu a recuperação (quebra ao abrir o e-mail em
+   outro aparelho, o caso mais comum de todos). verifyOtp com
+   token_hash não tem essa limitação, funciona em qualquer navegador. */
+export async function verifyRecoveryToken(tokenHash){
+  try{
+    const {error}=await supabase.auth.verifyOtp({type:'recovery',token_hash:tokenHash});
+    if(error) return {ok:false,error:'Link inválido ou expirado. Peça um novo link de recuperação de senha.'};
+    return {ok:true};
+  }catch(e){ return {ok:false,error:traduzErro(e)}; }
+}
+
 /* Usada tanto na tela de definir nova senha (após clicar no link de
    recuperação) quanto na troca de senha estando logado em
    Configurações — é o mesmo updateUser({password}) do Supabase nos
@@ -123,6 +139,6 @@ export async function deleteAccount(){
 
 export { supabase };
 
-const authApi={signUp,signIn,signOut,resetPasswordForEmail,updatePassword,updateEmail,reauthenticate,onAuthStateChange,deleteAccount};
+const authApi={signUp,signIn,signOut,resetPasswordForEmail,verifyRecoveryToken,updatePassword,updateEmail,reauthenticate,onAuthStateChange,deleteAccount};
 if(window.__resolveAuthReady) window.__resolveAuthReady(authApi);
 else window.__authReady=Promise.resolve(authApi);

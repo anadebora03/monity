@@ -99,10 +99,30 @@ export async function resetPasswordForEmail(email: string) {
   }
 }
 
+/* Template de e-mail "Reset Password" é compartilhado entre o Monity
+   App e o Monity Pro (mesmo projeto Supabase) — usa {{ .RedirectTo }}
+   (resolve pro domínio certo em cada app, já que cada um passa seu
+   próprio redirectTo acima) + token_hash/type anexados manualmente,
+   não o {{ .ConfirmationURL }} padrão, que gera um `code` PKCE preso
+   ao navegador que pediu a recuperação (quebra ao abrir o e-mail em
+   outro aparelho — o caso mais comum de todos: pedir no computador,
+   abrir no celular). verifyOtp com token_hash não tem essa
+   limitação. */
+export async function verifyRecoveryToken(tokenHash: string) {
+  const supabase = createClient();
+  try {
+    const { error } = await supabase.auth.verifyOtp({ type: 'recovery', token_hash: tokenHash });
+    if (error) return { ok: false as const, error: 'Link inválido ou expirado. Peça um novo link de recuperação de senha.' };
+    return { ok: true as const };
+  } catch (e) {
+    return { ok: false as const, error: traduzErro(e) };
+  }
+}
+
 /* Usada em /reset-password, depois que o usuário chega pelo link do
-   e-mail — a sessão de recuperação já foi estabelecida pelo próprio
-   client (detectSessionInUrl, padrão do @supabase/ssr), então
-   updateUser() já opera sobre ela sem nenhum passo extra. */
+   e-mail — a sessão de recuperação já foi estabelecida por
+   verifyRecoveryToken() acima, então updateUser() já opera sobre ela
+   sem nenhum passo extra. */
 export async function updatePassword(password: string) {
   const supabase = createClient();
   try {

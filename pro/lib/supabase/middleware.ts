@@ -17,17 +17,12 @@ import { NextResponse, type NextRequest } from 'next/server';
    não tem conta ainda quanto pra quem já tem — a própria página
    decide o que mostrar. */
 /* AUTH-RESET-01: /reset-password precisa ficar público porque o
-   usuário chega ali direto do link de e-mail, ANTES de o navegador
-   trocar o `code` da URL pela sessão de verdade (isso acontece no
-   client, dentro da própria página) — se essa rota exigisse sessão
-   pra passar pelo middleware (que roda no servidor, olhando cookies
-   já existentes), o primeiro request cairia em /login antes mesmo do
-   client ter a chance de processar o link. */
-/* /auth/confirm: Route Handler que troca token_hash por sessão
-   (verifyOtp) — chega sem sessão nenhuma ainda, pelo mesmo motivo de
-   /reset-password acima. Fica público só pra deixar o handler rodar;
-   ele mesmo decide pra onde redirecionar depois. */
-const PUBLIC_PATHS = ['/', '/login', '/cadastro', '/recuperar-senha', '/reset-password', '/auth/confirm'];
+   usuário chega ali direto do link de e-mail (via token_hash,
+   verifyOtp — ver pro/lib/auth.ts), ANTES de existir sessão. Se essa
+   rota exigisse sessão pra passar pelo middleware (que roda no
+   servidor, olhando cookies já existentes), o primeiro request cairia
+   em /login antes mesmo do client processar o link. */
+const PUBLIC_PATHS = ['/', '/login', '/cadastro', '/recuperar-senha', '/reset-password'];
 const PUBLIC_PREFIXES = ['/convite/'];
 
 export async function updateSession(request: NextRequest) {

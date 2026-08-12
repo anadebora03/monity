@@ -2802,6 +2802,22 @@ async function boot(){
   await initPlanoTerapeutico();
   await initLicense();
   await registrarListenerAuth();
+  // AUTH-RESET-01: link de recuperação de senha, formato token_hash
+  // (ver js/auth.js:verifyRecoveryToken — não é mais o `code` PKCE
+  // padrão, que quebrava ao abrir o e-mail num aparelho diferente de
+  // quem pediu a recuperação). Processado uma vez só no boot, antes
+  // de qualquer decisão de sessão normal — senão o parâmetro na URL
+  // fica "pendurado" e pode confundir um refresh futuro.
+  const urlParams = new URLSearchParams(window.location.search);
+  const tokenHash = urlParams.get('token_hash');
+  if(tokenHash && urlParams.get('type')==='recovery'){
+    history.replaceState(null,'',window.location.pathname);
+    const auth = await window.__authReady;
+    const r = await auth.verifyRecoveryToken(tokenHash);
+    if(r.ok){ AUTH_SCREEN='nova-senha'; renderWelcome(); return; }
+    AUTH_MSG = null;
+    toast(r.error);
+  }
   if(AUTH_SCREEN==='nova-senha'){ renderWelcome(); return; }
   const temSessao = await verificarSessao();
   if(temSessao){
