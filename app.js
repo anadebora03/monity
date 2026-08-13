@@ -93,7 +93,11 @@ function lostPct(){return S.profile.pesoInicial?(lost()/S.profile.pesoInicial*10
    usa o Marco Zero p.pesoInicial/p.dataInicio) — nunca misturar os dois. */
 function firstTrackedWeight(){const w=sortedWeigh();return w.length?w[0].peso:null;}
 function trackedLost(){const f=firstTrackedWeight();return f==null?null:+(f-currentWeight()).toFixed(1);}
-function imc(){const h=S.profile.altura/100;return h?currentWeight()/(h*h):0;}
+/* Altura precisa estar numa faixa plausível (100-250cm) antes de entrar em
+   qualquer cálculo de IMC — sem essa guarda, um valor corrompido/mal digitado
+   (ex: "1" em vez de "165") produz um IMC absurdo mesmo com a fórmula certa. */
+function alturaCm(){const a=S.profile.altura;return a>=100&&a<=250?a:null;}
+function imc(){const a=alturaCm();if(!a)return 0;const h=a/100;return currentWeight()/(h*h);}
 function imcClass(v){
   if(!v) return '';
   if(v<18.5) return 'Abaixo do peso';
@@ -319,7 +323,7 @@ function inicioView(){
   </div>
 
   <div class="grid2">
-    <div class="stat-tile2">
+    <div class="stat-tile2" onclick="openSheet('pesar')" style="cursor:pointer">
       <div class="k">Peso atual</div>
       <div class="v">${nf(currentWeight())}<small> kg</small></div>
       <span class="delta2 ${dir}">${l>=0?'−':'+'}${nf(Math.abs(l))} kg · ${nf(Math.abs(lostPct()))}%</span>
@@ -334,7 +338,7 @@ function inicioView(){
   <div class="grid3">
     <div class="stat-tile2"><div class="k">Tratamento</div><div class="v" style="font-size:20px">${daysTreat()}<small> dias</small></div></div>
     <div class="stat-tile2"><div class="k">Aplicações</div><div class="v" style="font-size:20px">${totalApplications()}</div>${historicalApplicationsCount()?`<small style="display:block;font-size:9.5px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--tx-3);margin-top:2px">${historicalApplicationsCount()} hist. + ${S.applications.length}</small>`:''}</div>
-    <div class="stat-tile2"><div class="k">IMC</div><div class="v" style="font-size:20px">${nf(imcVal)}</div>${imcVal?`<small style="display:block;font-size:9.5px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--tx-3);margin-top:2px">${imcClass(imcVal)}</small>`:''}</div>
+    <div class="stat-tile2"><div class="k">IMC</div><div class="v" style="font-size:20px">${imcVal?nf(imcVal):'—'}</div>${imcVal?`<small style="display:block;font-size:9.5px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--tx-3);margin-top:2px">${imcClass(imcVal)}</small>`:''}</div>
   </div>
 
   ${pen?`<div class="gcard tight">
@@ -444,7 +448,8 @@ function aplicacaoView(){
    TELA · EVOLUÇÃO
    ============================================================ */
 function imcSeries(){
-  const h=S.profile.altura/100; if(!h) return [];
+  const a=alturaCm(); if(!a) return [];
+  const h=a/100;
   return sortedWeigh().map(w=>({x:w.date,y:+(w.peso/(h*h)).toFixed(1)}));
 }
 /* Progresso rumo à meta de peso, em % — usado no card "Sua evolução" (Evolução > Peso).
@@ -482,7 +487,7 @@ function evPesoTab(w){
   return `
   <div class="grid2">
     <div class="stat-tile2"><div class="k">Peso inicial do tratamento</div><div class="v" style="font-size:20px">${nf(S.profile.pesoInicial)}<small> kg</small></div></div>
-    <div class="stat-tile2"><div class="k">Peso atual</div><div class="v" style="font-size:20px">${nf(currentWeight())}<small> kg</small></div></div>
+    <div class="stat-tile2" onclick="openSheet('pesar')" style="cursor:pointer"><div class="k">Peso atual</div><div class="v" style="font-size:20px">${nf(currentWeight())}<small> kg</small></div></div>
   </div>
   <div class="grid2">
     <div class="stat-tile2"><div class="k">Perda total</div><div class="v" style="font-size:20px">${l>=0?'−':'+'}${nf(Math.abs(l))}<small> kg</small></div>
@@ -495,7 +500,20 @@ function evPesoTab(w){
     <p style="font-size:13px;color:var(--tx-2);margin:6px 0 0;line-height:1.5">Do seu 1º registro no app (${nf(firstTrackedWeight())} kg, ${fmtBRy(w[0].date)}) até hoje: <b style="color:var(--tx-1)">${tl>=0?'−':'+'}${nf(Math.abs(tl))} kg</b></p>
     <p class="muted" style="font-size:11.5px;margin-top:6px;line-height:1.4">Isso mede sua primeira pesagem digitada aqui — diferente do "Peso inicial do tratamento" acima, que é o Marco Zero informado no cadastro.</p>
   </div>`:''}
-  ${evEvolutionCard()}`;
+  ${evEvolutionCard()}
+  <div class="between" style="margin:18px 0 6px"><div class="eyebrow2" style="margin:0">Histórico de pesagens</div>
+    <button type="button" class="btn-pill btn-sm ghost" onclick="openSheet('pesar')">+ Registrar pesagem</button></div>
+  <div class="gcard tight"><div class="hist-list">
+    ${w.length?[...w].reverse().map(x=>`<div class="hist-item" onclick="editPesagem('${x.date}')" style="cursor:pointer">
+      <div class="badge-glow">${icon('scale')}</div>
+      <div><div class="t">${nf(x.peso)} kg</div><div class="s">${fmtBRy(x.date)}</div></div>
+      <div class="r" style="font-size:12px;color:var(--tx-3)">Editar</div></div>`).join('')
+      :'<p class="muted center" style="font-size:13px;padding:8px 0">Nenhuma pesagem registrada ainda.</p>'}
+  </div></div>`;
+}
+function editPesagem(date){
+  const rec=S.weighings.find(w=>w.date===date);
+  if(rec) openSheet('pesar',{editRec:rec});
 }
 function evImcTab(){
   const cur=imc();
@@ -962,7 +980,7 @@ function statsView(){
 }
 
 function calcView(){
-  const cw=currentWeight(); const h=S.profile.altura/100;
+  const cw=currentWeight(); const a=alturaCm(); const h=a?a/100:0;
   const targets=[
     ['Sua meta',S.profile.pesoMeta],
     ['IMC 24,9 (limite saudável)',h?+(24.9*h*h).toFixed(1):null],
@@ -1060,7 +1078,7 @@ function buildNotifStatus(){
    SHEETS (modais de registro)
    ============================================================ */
 let SHEET=null, tmp={};
-function openSheet(id){SHEET=id;tmp={};renderSheet();history.pushState({monityNav:true},'');}
+function openSheet(id,extra){SHEET=id;tmp=extra||{};renderSheet();history.pushState({monityNav:true},'');}
 function closeSheet(){const b=document.getElementById('bd');if(b)b.remove();SHEET=null;}
 function renderSheet(){
   let old=document.getElementById('bd'); if(old)old.remove();
@@ -1118,19 +1136,21 @@ function sheetBody(id){
       <button class="btn-pill block" onclick="saveApp()">Salvar aplicação</button>`;
   }
   if(id==='pesar'){
-    return `<div class="ap-head"><button type="button" class="ap-back" onclick="closeSheet()" aria-label="Fechar">${CAL_CHEV_L}</button><span class="ap-title">Nova pesagem</span><span class="ap-head-spacer"></span></div>
-      <p class="sub">Peso, medidas e uma foto (opcional).</p>
-      <div class="glass-field-2"><div class="glass-field"><label for="pw-date">Data</label><label class="field-wrap" for="pw-date"><input type="date" id="pw-date" value="${todayISO()}"></label></div>
-      <div class="glass-field"><label for="pw-peso">Peso (kg)</label><label class="field-wrap" for="pw-peso"><input id="pw-peso" inputmode="decimal" placeholder="${nf(currentWeight())}"></label></div></div>
+    const rec=tmp.editRec;
+    const gv=k=>rec&&rec[k]!=null?rec[k]:'';
+    return `<div class="ap-head"><button type="button" class="ap-back" onclick="closeSheet()" aria-label="Fechar">${CAL_CHEV_L}</button><span class="ap-title">${rec?'Editar pesagem':'Nova pesagem'}</span><span class="ap-head-spacer"></span></div>
+      <p class="sub">${rec?'Corrija o peso ou as medidas deste registro.':'Peso, medidas e uma foto (opcional).'}</p>
+      <div class="glass-field-2"><div class="glass-field"><label for="pw-date">Data</label><label class="field-wrap" for="pw-date"><input type="date" id="pw-date" value="${rec?rec.date:todayISO()}"></label></div>
+      <div class="glass-field"><label for="pw-peso">Peso (kg)</label><label class="field-wrap" for="pw-peso"><input id="pw-peso" inputmode="decimal" value="${rec?nf(rec.peso):''}" placeholder="${nf(currentWeight())}"></label></div></div>
       <div id="pw-hint" style="font-size:12px;color:var(--warn2);margin:-10px 0 14px;display:none"></div>
       <div class="eyebrow2" style="margin:6px 0 8px">Medidas (cm) · opcional</div>
-      <div class="glass-field-2"><div class="glass-field"><label for="pw-cintura">Cintura</label><label class="field-wrap" for="pw-cintura"><input id="pw-cintura" inputmode="decimal"></label></div>
-      <div class="glass-field"><label for="pw-quadril">Quadril</label><label class="field-wrap" for="pw-quadril"><input id="pw-quadril" inputmode="decimal"></label></div></div>
-      <div class="glass-field-2"><div class="glass-field"><label for="pw-abdomen">Abdômen</label><label class="field-wrap" for="pw-abdomen"><input id="pw-abdomen" inputmode="decimal"></label></div>
-      <div class="glass-field"><label for="pw-coxa">Coxa</label><label class="field-wrap" for="pw-coxa"><input id="pw-coxa" inputmode="decimal"></label></div></div>
-      <div class="glass-field"><label for="pw-braco">Braço</label><label class="field-wrap" for="pw-braco"><input id="pw-braco" inputmode="decimal"></label></div>
-      <div class="glass-field"><label for="pw-foto">Foto de evolução (opcional)</label><label class="field-wrap" for="pw-foto" style="cursor:pointer"><span id="pw-foto-label">Escolher foto</span><input type="file" accept="image/*" id="pw-foto" style="display:none" onchange="document.getElementById('pw-foto-label').textContent=this.files[0]?this.files[0].name:'Escolher foto'"></label></div>
-      <button id="pw-save-btn" class="btn-pill block" onclick="savePesagem()">Salvar pesagem</button>`;
+      <div class="glass-field-2"><div class="glass-field"><label for="pw-cintura">Cintura</label><label class="field-wrap" for="pw-cintura"><input id="pw-cintura" inputmode="decimal" value="${gv('cintura')}"></label></div>
+      <div class="glass-field"><label for="pw-quadril">Quadril</label><label class="field-wrap" for="pw-quadril"><input id="pw-quadril" inputmode="decimal" value="${gv('quadril')}"></label></div></div>
+      <div class="glass-field-2"><div class="glass-field"><label for="pw-abdomen">Abdômen</label><label class="field-wrap" for="pw-abdomen"><input id="pw-abdomen" inputmode="decimal" value="${gv('abdomen')}"></label></div>
+      <div class="glass-field"><label for="pw-coxa">Coxa</label><label class="field-wrap" for="pw-coxa"><input id="pw-coxa" inputmode="decimal" value="${gv('coxa')}"></label></div></div>
+      <div class="glass-field"><label for="pw-braco">Braço</label><label class="field-wrap" for="pw-braco"><input id="pw-braco" inputmode="decimal" value="${gv('braco')}"></label></div>
+      <div class="glass-field"><label for="pw-foto">Foto de evolução (opcional)</label><label class="field-wrap" for="pw-foto" style="cursor:pointer"><span id="pw-foto-label">${rec&&rec.foto?'Foto já registrada — escolha outra para substituir':'Escolher foto'}</span><input type="file" accept="image/*" id="pw-foto" style="display:none" onchange="document.getElementById('pw-foto-label').textContent=this.files[0]?this.files[0].name:'Escolher foto'"></label></div>
+      <button id="pw-save-btn" class="btn-pill block" onclick="savePesagem()">${rec?'Corrigir pesagem':'Salvar pesagem'}</button>`;
   }
   if(id==='caneta'){
     return `<div class="ap-head"><button type="button" class="ap-back" onclick="closeSheet()" aria-label="Fechar">${CAL_CHEV_L}</button><span class="ap-title">Controle da caneta</span><span class="ap-head-spacer"></span></div>
@@ -1422,14 +1442,17 @@ function saveApp(){
 function savePesagem(){
   const date=val('pw-date'), peso=numBR(val('pw-peso'));
   if(!date||!peso){toast('Informe data e peso');return;}
+  if(peso<=0){toast('O peso deve ser maior que zero');return;}
+  if(peso>400){toast('Informe um peso válido');return;}
   const prev=S.weighings.find(w=>w.date===date);
   const rec={id:(prev&&prev.id)||crypto.randomUUID(),date,peso};
   ['cintura','quadril','abdomen','coxa','braco'].forEach(k=>{const v=numBR(val('pw-'+k));if(v)rec[k]=v;});
   const file=document.getElementById('pw-foto').files[0];
-  const finish=()=>{ // substitui pesagem do mesmo dia se existir
+  const finish=()=>{ // substitui pesagem do mesmo dia se existir (mesmo id, sem duplicar)
+    if(!file && prev && prev.foto) rec.foto=prev.foto;
     S.weighings=S.weighings.filter(w=>w.date!==date); S.weighings.push(rec);
     if(date===todayISO() && NOTIF) NOTIF.cancelPesagemHoje();
-    save();closeSheet();toast('Pesagem salva');render();
+    save();closeSheet();toast(prev?'Pesagem corrigida':'Pesagem salva');render();
   };
   if(file){
     const btn=document.getElementById('pw-save-btn');
@@ -1467,6 +1490,8 @@ function saveBio(){
 function savePerfil(){
   const p=S.profile;
   if(val('pf-med')==='Outro'&&!val('pf-med-outro').trim()){toast('Informe o nome do medicamento/caneta');return;}
+  const altInput=val('pf-altura');
+  if(altInput){const altNum=parseInt(altInput);if(!altNum||altNum<100||altNum>250){toast('Informe uma altura válida, em cm (ex: 165)');return;}}
   p.nome=val('pf-nome')||p.nome; p.medicamento=valWithOutro('pf-med'); p.doseAtual=val('pf-dose');
   p.diaAplicacao=parseInt(val('pf-dia')); p.altura=parseInt(val('pf-altura'))||p.altura;
   p.pesoMeta=numBR(val('pf-meta'))||p.pesoMeta; p.metaAgua=numBR(val('pf-agua'))||p.metaAgua;
@@ -1865,6 +1890,7 @@ function startNew(){
   const dataInicio=val('o-data')||hoje;
   if(val('o-med')==='Outro'&&!val('o-med-outro').trim()){toast('Informe o nome do medicamento/caneta');return;}
   if(!pini||!pmeta||!alt){toast('Preencha peso inicial, meta e altura');return;}
+  if(alt<100||alt>250){toast('Informe uma altura válida, em cm (ex: 165)');return;}
   if(anterior&&!atual){toast('Preencha seu peso atual');return;}
   if(dataInicio>hoje){toast('A data de início do tratamento não pode ser no futuro');return;}
   const naplRaw=val('o-napl');

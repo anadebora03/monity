@@ -241,7 +241,10 @@ export async function getPatientDetail(supabase: SupabaseClient, patientId: stri
     pesoInicial != null && pesoMeta != null && pesoAtual != null && pesoInicial !== pesoMeta
       ? Math.max(0, Math.min(100, Math.round(((pesoInicial - pesoAtual) / (pesoInicial - pesoMeta)) * 100)))
       : null;
-  const altura: number | null = profile?.altura ?? null;
+  const alturaRaw: number | null = profile?.altura ?? null;
+  // Guarda contra altura corrompida/mal digitada (ex: "1" em vez de "165") — sem isso, a
+  // fórmula (correta) do IMC produz um valor absurdo em vez de simplesmente não exibir nada.
+  const altura = alturaRaw != null && alturaRaw >= 100 && alturaRaw <= 250 ? alturaRaw : null;
   const imc = pesoAtual != null && altura ? +(pesoAtual / (altura / 100) ** 2).toFixed(1) : null;
   const dataInicio: string | null = profile?.data_inicio ?? null;
   const diasTratamento = dataInicio ? diasEntre(dataInicio, hoje) + 1 : null;

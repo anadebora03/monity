@@ -242,7 +242,9 @@ function calcularTendencias(d: DadosClinicos, pesagensP: PesagemC[], bioP: BioC[
   const out: Tendencia[] = [];
   const peso = tendenciaSerie(pesagensP.map((p) => ({ date: p.date, valor: p.peso })), 'peso', 'Peso', 'kg');
   if (peso) out.push(peso);
-  if (d.altura) {
+  // Guarda contra altura corrompida/mal digitada (ex: "1" em vez de "165") — mesma faixa
+  // plausível usada em patient-detail.ts, senão o IMC (fórmula correta) vira um número absurdo.
+  if (d.altura && d.altura >= 100 && d.altura <= 250) {
     const imcPontos = pesagensP.map((p) => ({ date: p.date, valor: p.peso / (d.altura! / 100) ** 2 }));
     const imc = tendenciaSerie(imcPontos, 'imc', 'IMC', '');
     if (imc) out.push(imc);
